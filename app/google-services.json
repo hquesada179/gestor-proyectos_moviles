@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "155026580409-cncb5l556hopdoqv3fni8dnd73v4s6e3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.helbertquesada.gestor_proyectos_moviles",
+            "certificate_hash": "6e0a7fb7f14157758e017f8375ee9fa1df0595b5"
+          }
+        },
+        {
           "client_id": "155026580409-u8ti27460atb2ke820kng12hq7r77l6c.apps.googleusercontent.com",
           "client_type": 3
         }

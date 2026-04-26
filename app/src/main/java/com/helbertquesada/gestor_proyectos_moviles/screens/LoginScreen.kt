@@ -45,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -77,8 +79,11 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextHint
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextPrimary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextSecondary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.appTextFieldColors
+import com.helbertquesada.gestor_proyectos_moviles.utils.GoogleSignInResult
+import com.helbertquesada.gestor_proyectos_moviles.utils.signInWithGoogle
 import com.helbertquesada.gestor_proyectos_moviles.utils.validateEmail
 import com.helbertquesada.gestor_proyectos_moviles.utils.validatePassword
+import kotlinx.coroutines.launch
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
 import com.google.firebase.Firebase
@@ -120,6 +125,8 @@ fun LoginScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -469,7 +476,22 @@ fun LoginScreen(
 
             // ── Botón Google (fuera de la card) ───────────────────────────
             OutlinedButton(
-                onClick = { /* TODO: Google Sign-In - requiere SHA-1 y google-services.json */ },
+                onClick = {
+                    scope.launch {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        isLoading = true
+                        when (val result = signInWithGoogle(context)) {
+                            is GoogleSignInResult.Success -> onSuccessfulLogin()
+                            is GoogleSignInResult.Cancelled -> isLoading = false
+                            is GoogleSignInResult.Error -> {
+                                isLoading = false
+                                generalError = result.message
+                            }
+                        }
+                    }
+                },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
