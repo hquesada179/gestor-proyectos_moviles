@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,6 +79,7 @@ private const val POLL_INTERVAL_MS = 10_000L
 @Composable
 fun ProjectsScreen(
     onNavigate: (String) -> Unit,
+    onNavigateToDetail: (Int) -> Unit = {},
     viewModel: ProyectoViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -135,9 +137,10 @@ fun ProjectsScreen(
 
             Spacer(Modifier.height(12.dp))
             ProyectosSection(
-                uiState  = uiState,
-                onRetry  = { viewModel.loadProyectos() },
-                modifier = Modifier.padding(horizontal = 16.dp)
+                uiState            = uiState,
+                onRetry            = { viewModel.loadProyectos() },
+                onNavigateToDetail = onNavigateToDetail,
+                modifier           = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(Modifier.height(12.dp))
@@ -204,13 +207,14 @@ private fun RefreshErrorBanner(message: String, modifier: Modifier = Modifier) {
 private fun ProyectosSection(
     uiState: ProyectoUiState,
     onRetry: () -> Unit,
+    onNavigateToDetail: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
         is ProyectoUiState.Loading -> ProyectosLoading(modifier)
         is ProyectoUiState.Error   -> ProyectosError(uiState.message, onRetry, modifier)
         // refreshError is handled by the banner above — don't show it here
-        is ProyectoUiState.Success -> ProyectosSuccess(uiState.proyectos, modifier)
+        is ProyectoUiState.Success -> ProyectosSuccess(uiState.proyectos, onNavigateToDetail, modifier)
     }
 }
 
@@ -253,7 +257,11 @@ private fun ProyectosError(message: String, onRetry: () -> Unit, modifier: Modif
 }
 
 @Composable
-private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = Modifier) {
+private fun ProyectosSuccess(
+    proyectos: List<ProyectoDto>,
+    onNavigateToDetail: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
     if (proyectos.isEmpty()) {
         Surface(modifier = modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(16.dp)) {
             Box(modifier = Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
@@ -274,7 +282,7 @@ private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = 
             modifier   = modifier
         ) {
             activos.forEachIndexed { index, proyecto ->
-                ProjectListItem(proyecto)
+                ProjectListItem(proyecto, onClick = { onNavigateToDetail(proyecto.id) })
                 if (index < activos.lastIndex)
                     HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
             }
@@ -290,7 +298,7 @@ private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = 
             modifier   = modifier
         ) {
             otros.forEachIndexed { index, proyecto ->
-                ProjectListItem(proyecto)
+                ProjectListItem(proyecto, onClick = { onNavigateToDetail(proyecto.id) })
                 if (index < otros.lastIndex)
                     HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
             }
@@ -413,7 +421,7 @@ private fun ProyectosSectionCard(
 }
 
 @Composable
-private fun ProjectListItem(proyecto: ProyectoDto) {
+private fun ProjectListItem(proyecto: ProyectoDto, onClick: () -> Unit) {
     val estadoDisplay = proyecto.estado?.replaceFirstChar { it.uppercase() } ?: "Sin estado"
     val meta = buildString {
         append(estadoDisplay)
@@ -421,7 +429,10 @@ private fun ProjectListItem(proyecto: ProyectoDto) {
         if (proyecto.tasksCount > 0)   append(" · ${proyecto.tasksCount} tarea${if (proyecto.tasksCount != 1) "s" else ""}")
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {

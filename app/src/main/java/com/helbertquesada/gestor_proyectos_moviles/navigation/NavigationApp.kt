@@ -2,12 +2,15 @@ package com.helbertquesada.gestor_proyectos_moviles.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.helbertquesada.gestor_proyectos_moviles.screens.HomeScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.LoginScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.ProfileScreen
+import com.helbertquesada.gestor_proyectos_moviles.screens.ProjectDetailScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.ProjectsScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.RegisterScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.RequirementsScreen
@@ -80,7 +83,8 @@ fun NavigationApp() {
         }
         composable("projects") {
             ProjectsScreen(
-                onNavigate = { route -> navController.navigateMain(route) }
+                onNavigate = { route -> navController.navigateMain(route) },
+                onNavigateToDetail = { id -> navController.navigate("project_detail/$id") }
             )
         }
         composable("tasks") {
@@ -102,6 +106,16 @@ fun NavigationApp() {
             ProfileScreen(
                 onClickLogout = onLogout,
                 onNavigate = { route -> navController.navigateMain(route) }
+            )
+        }
+        composable(
+            route = "project_detail/{projectId}",
+            arguments = listOf(navArgument("projectId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val projectId = backStackEntry.arguments?.getInt("projectId") ?: 0
+            ProjectDetailScreen(
+                projectId = projectId,
+                onBack    = { navController.popBackStack() }
             )
         }
     }
