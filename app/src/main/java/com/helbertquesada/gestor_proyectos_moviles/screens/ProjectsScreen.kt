@@ -24,7 +24,12 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Rocket
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,14 +37,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDto
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlue
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentIndigo
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentViolet
@@ -48,13 +58,21 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.BorderDefault
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkBackground
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkCard
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkCardElevated
+import com.helbertquesada.gestor_proyectos_moviles.ui.theme.ErrorColor
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.SuccessColor
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextDisabled
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextPrimary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextSecondary
+import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoUiState
+import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoViewModel
 
 @Composable
-fun ProjectsScreen(onNavigate: (String) -> Unit) {
+fun ProjectsScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: ProyectoViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         containerColor = DarkBackground,
         bottomBar = { AppBottomBar(currentRoute = "projects", onNavigate = onNavigate) }
@@ -69,13 +87,9 @@ fun ProjectsScreen(onNavigate: (String) -> Unit) {
             ProjectsHeader()
 
             Spacer(Modifier.height(16.dp))
-
-            // ── Status card ───────────────────────────────────────────────
             ProjectStatusCard(modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(Modifier.height(16.dp))
-
-            // ── AI bar ────────────────────────────────────────────────────
             AiQueryBar(
                 placeholder = "Buscar o preguntar sobre proyectos...",
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -83,48 +97,17 @@ fun ProjectsScreen(onNavigate: (String) -> Unit) {
 
             Spacer(Modifier.height(20.dp))
 
-            // ── Proyectos activos ─────────────────────────────────────────
-            ProjectsSectionCard(
-                title = "Proyectos activos",
-                badge = "2 ACTIVOS",
-                badgeColor = AccentBlue,
+            // ── Proyectos reales desde Laravel ────────────────────────────
+            ProyectosSection(
+                uiState = uiState,
+                onRetry = { viewModel.loadProyectos() },
                 modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                ProjectListItem("App Gestión Móvil", "Sprint 3 · 8 tareas")
-                HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
-                ProjectListItem("Portal Administrativo", "Backlog · 12 tareas")
-            }
+            )
 
             Spacer(Modifier.height(12.dp))
-
-            // ── Módulos ────────────────────────────────────────────────────
-            ProjectsSectionCard(
-                title = "Módulos recientes",
-                badge = "5 TOTAL",
-                badgeColor = AccentVioletLight,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                ModuleStoryItem(
-                    label = "Login y Autenticación",
-                    meta = "8 Story Points · Sprint 3",
-                    accentColor = AccentBlue
-                )
-                Spacer(Modifier.height(8.dp))
-                ModuleStoryItem(
-                    label = "Dashboard Principal",
-                    meta = "5 Story Points · Backlog",
-                    accentColor = AccentVioletLight
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // ── Equipo ────────────────────────────────────────────────────
             TeamSectionCard(modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(Modifier.height(20.dp))
-
-            // ── CTA ───────────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +125,7 @@ fun ProjectsScreen(onNavigate: (String) -> Unit) {
 
             Spacer(Modifier.height(8.dp))
             Text(
-                "ÚLTIMA SINCRONIZACIÓN HACE 5 MIN",
+                "CONECTADO A LARAVEL API",
                 color = TextDisabled,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Medium,
@@ -150,6 +133,120 @@ fun ProjectsScreen(onNavigate: (String) -> Unit) {
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+// ─── Sección dinámica de proyectos ────────────────────────────────────────────
+
+@Composable
+private fun ProyectosSection(
+    uiState: ProyectoUiState,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when (uiState) {
+        is ProyectoUiState.Loading -> ProyectosLoading(modifier)
+        is ProyectoUiState.Error   -> ProyectosError(uiState.message, onRetry, modifier)
+        is ProyectoUiState.Success -> ProyectosSuccess(uiState.proyectos, modifier)
+    }
+}
+
+@Composable
+private fun ProyectosLoading(modifier: Modifier = Modifier) {
+    Surface(modifier = modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(16.dp)) {
+        Column(
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
+            Text("Cargando proyectos...", color = TextSecondary, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun ProyectosError(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(16.dp)) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(Icons.Filled.Warning, null, tint = ErrorColor, modifier = Modifier.size(28.dp))
+            Text("No se pudo conectar al servidor", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(message, color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Reintentar", fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = Modifier) {
+    if (proyectos.isEmpty()) {
+        Surface(modifier = modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(16.dp)) {
+            Box(modifier = Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("No hay proyectos registrados", color = TextSecondary, fontSize = 13.sp)
+            }
+        }
+        return
+    }
+
+    val activos = proyectos.filter { it.estado?.lowercase() == "activo" || it.estado?.lowercase() == "en progreso" }
+    val otros   = proyectos.filter { it !in activos }
+
+    if (activos.isNotEmpty()) {
+        ProyectosSectionCard(
+            title = "Proyectos activos",
+            badge = "${activos.size} ACTIVOS",
+            badgeColor = AccentBlue,
+            modifier = modifier
+        ) {
+            activos.forEachIndexed { index, proyecto ->
+                ProjectListItem(proyecto)
+                if (index < activos.lastIndex)
+                    HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
+            }
+        }
+    }
+
+    if (otros.isNotEmpty()) {
+        Spacer(Modifier.height(12.dp))
+        ProyectosSectionCard(
+            title = "Otros proyectos",
+            badge = "${otros.size} TOTAL",
+            badgeColor = AccentVioletLight,
+            modifier = modifier
+        ) {
+            otros.forEachIndexed { index, proyecto ->
+                ProjectListItem(proyecto)
+                if (index < otros.lastIndex)
+                    HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
+            }
+        }
+    }
+
+    if (activos.isEmpty() && otros.isEmpty()) {
+        ProyectosSectionCard(
+            title = "Todos los proyectos",
+            badge = "${proyectos.size} TOTAL",
+            badgeColor = AccentBlue,
+            modifier = modifier
+        ) {
+            proyectos.forEachIndexed { index, proyecto ->
+                ProjectListItem(proyecto)
+                if (index < proyectos.lastIndex)
+                    HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
+            }
         }
     }
 }
@@ -239,7 +336,7 @@ private fun AiQueryBar(placeholder: String, modifier: Modifier = Modifier) {
 // ─── Section card ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun ProjectsSectionCard(
+private fun ProyectosSectionCard(
     title: String,
     badge: String,
     badgeColor: Color,
@@ -263,34 +360,22 @@ private fun ProjectsSectionCard(
 }
 
 @Composable
-private fun ProjectListItem(name: String, meta: String) {
+private fun ProjectListItem(proyecto: ProyectoDto) {
+    val estadoDisplay = proyecto.estado?.replaceFirstChar { it.uppercase() } ?: "Sin estado"
+    val meta = buildString {
+        append(estadoDisplay)
+        if (proyecto.sprintsCount > 0) append(" · ${proyecto.sprintsCount} sprint${if (proyecto.sprintsCount != 1) "s" else ""}")
+        if (proyecto.tasksCount > 0)   append(" · ${proyecto.tasksCount} tarea${if (proyecto.tasksCount != 1) "s" else ""}")
+    }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(name, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(meta, color = TextSecondary, fontSize = 11.sp)
+            Text(proyecto.nombre, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(meta, color = TextSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = TextDisabled, modifier = Modifier.size(16.dp))
-    }
-}
-
-@Composable
-private fun ModuleStoryItem(label: String, meta: String, accentColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(DarkCardElevated)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(modifier = Modifier.size(3.dp, 36.dp).clip(RoundedCornerShape(2.dp)).background(accentColor))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-            Text(meta, color = TextSecondary, fontSize = 11.sp)
-        }
     }
 }
 
@@ -306,7 +391,7 @@ private fun TeamSectionCard(modifier: Modifier = Modifier) {
             }
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
-                listOf("H", "Q", "M").forEachIndexed { i, initial ->
+                listOf("H", "Q", "M").forEach { initial ->
                     Box(
                         modifier = Modifier.size(32.dp).clip(CircleShape)
                             .background(Brush.linearGradient(listOf(AccentIndigo, AccentViolet)))
