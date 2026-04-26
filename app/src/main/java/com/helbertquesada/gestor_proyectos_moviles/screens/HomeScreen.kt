@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,9 +28,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -42,10 +39,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentAmber
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlue
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlueLight
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentIndigo
@@ -67,7 +61,6 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.BorderDefault
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkBackground
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkCard
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkCardElevated
-import com.helbertquesada.gestor_proyectos_moviles.ui.theme.DarkSurface
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.ErrorColor
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.SuccessColor
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextDisabled
@@ -88,7 +81,8 @@ private data class ModuleInfo(
     val name: String,
     val description: String,
     val icon: ImageVector,
-    val accent: Color
+    val accent: Color,
+    val route: String
 )
 
 private data class ActivityInfo(
@@ -99,25 +93,18 @@ private data class ActivityInfo(
     val accent: Color
 )
 
-private data class NavItemInfo(val label: String, val icon: ImageVector)
-
-private val Amber = Color(0xFFF59E0B)
-
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
 
 @Composable
-fun HomeScreen(onClickLogout: () -> Unit) {
+fun HomeScreen(onClickLogout: () -> Unit, onNavigate: (String) -> Unit) {
     val currentUser = Firebase.auth.currentUser
     val userEmail = currentUser?.email ?: "usuario@correo.com"
     val userDisplayName = currentUser?.displayName
     val userInitial = (userDisplayName?.firstOrNull() ?: userEmail.firstOrNull() ?: 'U').uppercaseChar()
-    var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
         containerColor = DarkBackground,
-        bottomBar = {
-            HomeBottomBar(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
-        }
+        bottomBar = { AppBottomBar(currentRoute = "home", onNavigate = onNavigate) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -126,82 +113,44 @@ fun HomeScreen(onClickLogout: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
         ) {
-            // ── Header ────────────────────────────────────────────────────
             HomeHeader(userInitial = userInitial)
 
-            // ── Saludo ────────────────────────────────────────────────────
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 20.dp)
-            ) {
-                Text(
-                    text = "Hola, bienvenido",
-                    color = TextPrimary,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            Column(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 20.dp)) {
+                Text("Hola, bienvenido", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(2.dp))
-                Text(
-                    text = userEmail,
-                    color = AccentBlueLight,
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Text(userEmail, color = AccentBlueLight, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
 
             Spacer(Modifier.height(16.dp))
-
-            // ── Tarjeta principal ─────────────────────────────────────────
             MainSummaryCard(modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(Modifier.height(20.dp))
-
-            // ── Indicadores rápidos ───────────────────────────────────────
             SectionTitle("INDICADORES RÁPIDOS", modifier = Modifier.padding(horizontal = 16.dp))
             Spacer(Modifier.height(10.dp))
             QuickStatsSection(modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(Modifier.height(20.dp))
-
-            // ── Módulos principales ───────────────────────────────────────
             SectionTitle("MÓDULOS PRINCIPALES", modifier = Modifier.padding(horizontal = 16.dp))
             Spacer(Modifier.height(10.dp))
-            ModulesSection(modifier = Modifier.padding(horizontal = 16.dp))
+            ModulesSection(modifier = Modifier.padding(horizontal = 16.dp), onNavigate = onNavigate)
 
             Spacer(Modifier.height(20.dp))
-
-            // ── Actividad reciente ────────────────────────────────────────
             SectionTitle("ACTIVIDAD RECIENTE", modifier = Modifier.padding(horizontal = 16.dp))
             Spacer(Modifier.height(10.dp))
             RecentActivitySection(modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(Modifier.height(24.dp))
-
-            // ── Cerrar sesión ─────────────────────────────────────────────
             OutlinedButton(
-                onClick = {
-                    Firebase.auth.signOut()
-                    onClickLogout()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(48.dp),
+                onClick = { Firebase.auth.signOut(); onClickLogout() },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(48.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, ErrorColor.copy(alpha = 0.6f)),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor)
             ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Cerrar sesión", fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
-
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -213,56 +162,24 @@ fun HomeScreen(onClickLogout: () -> Unit) {
 private fun HomeHeader(userInitial: Char) {
     Column {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(DarkBackground)
+            modifier = Modifier.fillMaxWidth().background(DarkBackground)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AccentViolet),
+                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(AccentViolet),
                 contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Filled.GridView,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Text(
-                text = "Gestor de Proyectos",
-                color = TextPrimary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
+            ) { Icon(Icons.Filled.GridView, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+            Text("Gestor de Proyectos", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             IconButton(onClick = {}, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    Icons.Filled.Notifications,
-                    contentDescription = "Notificaciones",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(22.dp)
-                )
+                Icon(Icons.Filled.Notifications, "Notificaciones", tint = TextSecondary, modifier = Modifier.size(22.dp))
             }
             Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
+                modifier = Modifier.size(34.dp).clip(CircleShape)
                     .background(Brush.linearGradient(listOf(AccentIndigo, AccentViolet))),
                 contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = userInitial.toString(),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            ) { Text(userInitial.toString(), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
         }
         HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
     }
@@ -273,66 +190,29 @@ private fun HomeHeader(userInitial: Char) {
 @Composable
 private fun MainSummaryCard(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.linearGradient(listOf(Color(0xFF1A1060), Color(0xFF0D1E4A)))
-            )
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFF1A1060), Color(0xFF0D1E4A))))
             .border(1.dp, AccentIndigo.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
             .padding(20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(SuccessColor)
-                    )
-                    Text(
-                        text = "PANEL ACTIVO",
-                        color = SuccessColor,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(SuccessColor))
+                    Text("PANEL ACTIVO", color = SuccessColor, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
                 }
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Panel de Control",
-                    color = TextPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Panel de Control", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Gestiona tus proyectos, tareas y requerimientos desde un solo lugar.",
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                )
+                Text("Gestiona tus proyectos, tareas y requerimientos desde un solo lugar.", color = TextSecondary, fontSize = 13.sp, lineHeight = 18.sp)
             }
             Spacer(Modifier.width(16.dp))
             Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                modifier = Modifier.size(52.dp).clip(RoundedCornerShape(14.dp))
                     .background(AccentViolet.copy(alpha = 0.25f))
                     .border(1.dp, AccentVioletLight.copy(alpha = 0.3f), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Filled.Dashboard,
-                    contentDescription = null,
-                    tint = AccentVioletLight,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
+            ) { Icon(Icons.Filled.Dashboard, null, tint = AccentVioletLight, modifier = Modifier.size(26.dp)) }
         }
     }
 }
@@ -343,27 +223,16 @@ private fun MainSummaryCard(modifier: Modifier = Modifier) {
 private fun QuickStatsSection(modifier: Modifier = Modifier) {
     val stats = listOf(
         StatInfo("PROYECTOS ACTIVOS", "3", Icons.Filled.Folder, AccentBlue, "+1 este mes"),
-        StatInfo("TAREAS PENDIENTES", "12", Icons.Filled.CheckBox, Amber, "4 urgentes"),
+        StatInfo("TAREAS PENDIENTES", "12", Icons.Filled.CheckBox, AccentAmber, "4 urgentes"),
         StatInfo("REQUERIMIENTOS", "8", Icons.AutoMirrored.Filled.Assignment, AccentVioletLight, "2 nuevos"),
         StatInfo("PROGRESO GENERAL", "65%", Icons.AutoMirrored.Filled.TrendingUp, SuccessColor, "+5% esta semana")
     )
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            StatCard(modifier = Modifier.weight(1f), stat = stats[0])
-            StatCard(modifier = Modifier.weight(1f), stat = stats[1])
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatCard(Modifier.weight(1f), stats[0]); StatCard(Modifier.weight(1f), stats[1])
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            StatCard(modifier = Modifier.weight(1f), stat = stats[2])
-            StatCard(modifier = Modifier.weight(1f), stat = stats[3])
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatCard(Modifier.weight(1f), stats[2]); StatCard(Modifier.weight(1f), stats[3])
         }
     }
 }
@@ -372,14 +241,8 @@ private fun QuickStatsSection(modifier: Modifier = Modifier) {
 private fun StatCard(modifier: Modifier = Modifier, stat: StatInfo) {
     Surface(modifier = modifier, color = DarkCard, shape = RoundedCornerShape(14.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(stat.accent.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(stat.icon, contentDescription = null, tint = stat.accent, modifier = Modifier.size(20.dp))
+            Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(stat.accent.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                Icon(stat.icon, null, tint = stat.accent, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.height(10.dp))
             Text(stat.value, color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -394,52 +257,35 @@ private fun StatCard(modifier: Modifier = Modifier, stat: StatInfo) {
 // ─── Modules ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ModulesSection(modifier: Modifier = Modifier) {
+private fun ModulesSection(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
     val modules = listOf(
-        ModuleInfo("Proyectos", "Proyectos activos y archivados", Icons.Filled.Folder, AccentBlue),
-        ModuleInfo("Tareas", "Seguimiento de tareas del equipo", Icons.Filled.CheckBox, Amber),
-        ModuleInfo("Requerimientos", "Gestión de requerimientos", Icons.AutoMirrored.Filled.Assignment, AccentVioletLight),
-        ModuleInfo("Sprints", "Planificación y seguimiento", Icons.Filled.Refresh, SuccessColor)
+        ModuleInfo("Proyectos", "Proyectos activos y archivados", Icons.Filled.Folder, AccentBlue, "projects"),
+        ModuleInfo("Tareas", "Seguimiento de tareas del equipo", Icons.Filled.CheckBox, AccentAmber, "tasks"),
+        ModuleInfo("Requerimientos", "Gestión de requerimientos", Icons.AutoMirrored.Filled.Assignment, AccentVioletLight, "requirements"),
+        ModuleInfo("Sprints", "Planificación y seguimiento", Icons.Filled.Refresh, SuccessColor, "sprints")
     )
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ModuleCard(modifier = Modifier.weight(1f), module = modules[0])
-            ModuleCard(modifier = Modifier.weight(1f), module = modules[1])
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ModuleCard(Modifier.weight(1f), modules[0]) { onNavigate(modules[0].route) }
+            ModuleCard(Modifier.weight(1f), modules[1]) { onNavigate(modules[1].route) }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ModuleCard(modifier = Modifier.weight(1f), module = modules[2])
-            ModuleCard(modifier = Modifier.weight(1f), module = modules[3])
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ModuleCard(Modifier.weight(1f), modules[2]) { onNavigate(modules[2].route) }
+            ModuleCard(Modifier.weight(1f), modules[3]) { onNavigate(modules[3].route) }
         }
     }
 }
 
 @Composable
-private fun ModuleCard(modifier: Modifier = Modifier, module: ModuleInfo) {
-    Surface(
-        modifier = modifier.clickable {},
-        color = DarkCardElevated,
-        shape = RoundedCornerShape(14.dp)
-    ) {
+private fun ModuleCard(modifier: Modifier = Modifier, module: ModuleInfo, onClick: () -> Unit) {
+    Surface(modifier = modifier.clickable(onClick = onClick), color = DarkCardElevated, shape = RoundedCornerShape(14.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.size(42.dp).clip(RoundedCornerShape(12.dp))
                     .background(module.accent.copy(alpha = 0.18f))
                     .border(1.dp, module.accent.copy(alpha = 0.25f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
-            ) {
-                Icon(module.icon, contentDescription = null, tint = module.accent, modifier = Modifier.size(22.dp))
-            }
+            ) { Icon(module.icon, null, tint = module.accent, modifier = Modifier.size(22.dp)) }
             Spacer(Modifier.height(12.dp))
             Text(module.name, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(2.dp))
@@ -456,99 +302,26 @@ private fun RecentActivitySection(modifier: Modifier = Modifier) {
         ActivityInfo("Tarea 'Diseño de Login' completada", "Proyecto App Móvil", "Hace 2h", Icons.Filled.CheckCircle, SuccessColor),
         ActivityInfo("Proyecto 'App Móvil' actualizado", "v1.2 – nuevo módulo auth", "Hace 5h", Icons.Filled.Folder, AccentBlue),
         ActivityInfo("Nuevo requerimiento añadido", "Auth con Google OAuth", "Hace 1d", Icons.AutoMirrored.Filled.Assignment, AccentVioletLight),
-        ActivityInfo("Sprint 3 iniciado", "14 tareas planificadas", "Hace 1d", Icons.Filled.Refresh, Amber)
+        ActivityInfo("Sprint 3 iniciado", "14 tareas planificadas", "Hace 1d", Icons.Filled.Refresh, AccentAmber)
     )
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = DarkCard,
-        shape = RoundedCornerShape(16.dp)
-    ) {
+    Surface(modifier = modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(4.dp)) {
             activities.forEachIndexed { index, item ->
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(item.accent.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(item.icon, contentDescription = null, tint = item.accent, modifier = Modifier.size(18.dp))
+                    Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(item.accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                        Icon(item.icon, null, tint = item.accent, modifier = Modifier.size(18.dp))
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = item.title,
-                            color = TextPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Text(item.title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(item.subtitle, color = TextSecondary, fontSize = 11.sp)
                     }
                     Text(item.time, color = TextDisabled, fontSize = 10.sp)
                 }
-                if (index < activities.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = BorderDefault.copy(alpha = 0.4f),
-                        thickness = 0.5.dp
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ─── Bottom nav ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun HomeBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
-    val items = listOf(
-        NavItemInfo("Inicio", Icons.Filled.Home),
-        NavItemInfo("Proyectos", Icons.Filled.Folder),
-        NavItemInfo("Tareas", Icons.Filled.CheckBox),
-        NavItemInfo("Perfil", Icons.Filled.Person)
-    )
-    Surface(
-        color = DarkSurface,
-        tonalElevation = 8.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .height(64.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            items.forEachIndexed { index, item ->
-                val selected = selectedTab == index
-                val tint = if (selected) AccentBlue else TextDisabled
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (selected) AccentBlue.copy(alpha = 0.12f) else Color.Transparent)
-                        .clickable { onTabSelected(index) }
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Icon(item.icon, contentDescription = item.label, tint = tint, modifier = Modifier.size(22.dp))
-                    Text(
-                        text = item.label,
-                        color = tint,
-                        fontSize = 10.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                    )
-                }
+                if (index < activities.lastIndex) HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
             }
         }
     }
@@ -558,12 +331,5 @@ private fun HomeBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
 
 @Composable
 private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        color = TextSecondary,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 1.sp,
-        modifier = modifier
-    )
+    Text(text, color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, modifier = modifier)
 }

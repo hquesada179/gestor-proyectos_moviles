@@ -14,6 +14,8 @@ val AccentViolet = Color(0xFF7C3AED)
 val AccentVioletLight = Color(0xFFA78BFA)
 
 val AccentIndigo = Color(0xFF6366F1)
+val AccentAmber = Color(0xFFF59E0B)
+val AccentTeal = Color(0xFF14B8A6)
 
 val TextPrimary = Color(0xFFF1F5F9)
 val TextSecondary = Color(0xFF94A3B8)
