@@ -53,8 +53,10 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -77,6 +79,12 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextSecondary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.appTextFieldColors
 import com.helbertquesada.gestor_proyectos_moviles.utils.validateEmail
 import com.helbertquesada.gestor_proyectos_moviles.utils.validatePassword
+import android.app.Activity
+import androidx.compose.ui.platform.LocalView
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.auth
 
 // ─── Helpers privados para este archivo ──────────────────────────────────────
 
@@ -111,6 +119,7 @@ fun LoginScreen(
     onSuccessfulLogin: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -119,9 +128,12 @@ fun LoginScreen(
     var passwordError by remember { mutableStateOf("") }
     var generalError by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
 
     fun attemptLogin() {
         focusManager.clearFocus()
+        keyboardController?.hide()
         val (emailOk, emailMsg) = validateEmail(email)
         val (passOk, passMsg) = validatePassword(password)
         emailError = if (!emailOk) emailMsg else ""
@@ -129,10 +141,19 @@ fun LoginScreen(
         if (!emailOk || !passOk) return
         generalError = ""
         isLoading = true
-        // TODO: FirebaseAuth.getInstance().signInWithEmailAndPassword(email.trim(), password)
-        //       Requiere google-services.json y firebase-auth en build.gradle.kts
-        onSuccessfulLogin()
-        isLoading = false
+        auth.signInWithEmailAndPassword(email.trim(), password)
+            .addOnCompleteListener(activity) { task ->
+                isLoading = false
+                if (task.isSuccessful) {
+                    onSuccessfulLogin()
+                } else {
+                    generalError = when (task.exception) {
+                        is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrectos"
+                        is FirebaseAuthInvalidUserException -> "No existe una cuenta asociada a este correo"
+                        else -> "No fue posible iniciar sesión. Intenta nuevamente"
+                    }
+                }
+            }
     }
 
     Box(
@@ -242,6 +263,8 @@ fun LoginScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Email,
+                                    capitalization = KeyboardCapitalization.None,
+                                    autoCorrectEnabled = false,
                                     imeAction = ImeAction.Next
                                 ),
                                 keyboardActions = KeyboardActions(
@@ -305,6 +328,7 @@ fun LoginScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Password,
+                                    capitalization = KeyboardCapitalization.None,
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(onDone = { attemptLogin() }),

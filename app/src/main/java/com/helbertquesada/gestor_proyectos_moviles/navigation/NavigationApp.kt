@@ -7,12 +7,15 @@ import androidx.navigation.compose.rememberNavController
 import com.helbertquesada.gestor_proyectos_moviles.screens.HomeScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.LoginScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.RegisterScreen
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 @Composable
 fun NavigationApp() {
     val navController = rememberNavController()
+    val startDestination = if (Firebase.auth.currentUser != null) "home" else "login"
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
             LoginScreen(
                 onClickRegister = { navController.navigate("register") },

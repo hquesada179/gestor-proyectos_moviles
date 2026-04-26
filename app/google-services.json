@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "155026580409",
+    "project_id": "gestor-proyectos-5080a",
+    "storage_bucket": "gestor-proyectos-5080a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155026580409:android:f3cd9483b7de0632e40c68",
+        "android_client_info": {
+          "package_name": "com.helbertquesada.gestor_proyectos_moviles"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155026580409-u8ti27460atb2ke820kng12hq7r77l6c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB56lRmP29_u_0u9S5BiscWr6L-OlU7ySo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155026580409-u8ti27460atb2ke820kng12hq7r77l6c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

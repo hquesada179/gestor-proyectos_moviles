@@ -53,6 +53,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -80,6 +81,12 @@ import com.helbertquesada.gestor_proyectos_moviles.utils.validateConfirmPassword
 import com.helbertquesada.gestor_proyectos_moviles.utils.validateEmail
 import com.helbertquesada.gestor_proyectos_moviles.utils.validateName
 import com.helbertquesada.gestor_proyectos_moviles.utils.validatePassword
+import android.app.Activity
+import androidx.compose.ui.platform.LocalView
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.auth
 
 // ─── Helpers privados para este archivo ──────────────────────────────────────
 
@@ -114,6 +121,7 @@ fun RegisterScreen(
     onSuccessfulRegister: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -126,9 +134,12 @@ fun RegisterScreen(
     var confirmPasswordError by remember { mutableStateOf("") }
     var generalError by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
 
     fun attemptRegister() {
         focusManager.clearFocus()
+        keyboardController?.hide()
         val (nameOk, nameMsg) = validateName(name)
         val (emailOk, emailMsg) = validateEmail(email)
         val (passOk, passMsg) = validatePassword(password)
@@ -140,10 +151,19 @@ fun RegisterScreen(
         if (!nameOk || !emailOk || !passOk || !confirmOk) return
         generalError = ""
         isLoading = true
-        // TODO: FirebaseAuth.getInstance().createUserWithEmailAndPassword(email.trim(), password)
-        //       Requiere google-services.json y firebase-auth en build.gradle.kts
-        onSuccessfulRegister()
-        isLoading = false
+        auth.createUserWithEmailAndPassword(email.trim(), password)
+            .addOnCompleteListener(activity) { task ->
+                isLoading = false
+                if (task.isSuccessful) {
+                    onSuccessfulRegister()
+                } else {
+                    generalError = when (task.exception) {
+                        is FirebaseAuthInvalidCredentialsException -> "El correo no tiene un formato válido"
+                        is FirebaseAuthUserCollisionException -> "Ya existe una cuenta registrada con este correo"
+                        else -> "No fue posible completar el registro"
+                    }
+                }
+            }
     }
 
     Box(
@@ -270,6 +290,7 @@ fun RegisterScreen(
                                 colors = appTextFieldColors(),
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text,
                                     capitalization = KeyboardCapitalization.Words,
                                     imeAction = ImeAction.Next
                                 ),
@@ -308,6 +329,8 @@ fun RegisterScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Email,
+                                    capitalization = KeyboardCapitalization.None,
+                                    autoCorrectEnabled = false,
                                     imeAction = ImeAction.Next
                                 ),
                                 keyboardActions = KeyboardActions(
@@ -355,6 +378,7 @@ fun RegisterScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Password,
+                                    capitalization = KeyboardCapitalization.None,
                                     imeAction = ImeAction.Next
                                 ),
                                 keyboardActions = KeyboardActions(
@@ -402,6 +426,7 @@ fun RegisterScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Password,
+                                    capitalization = KeyboardCapitalization.None,
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(onDone = { attemptRegister() }),
