@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
@@ -85,6 +86,7 @@ import com.helbertquesada.gestor_proyectos_moviles.utils.validateConfirmPassword
 import com.helbertquesada.gestor_proyectos_moviles.utils.validateEmail
 import com.helbertquesada.gestor_proyectos_moviles.utils.validateName
 import com.helbertquesada.gestor_proyectos_moviles.utils.validatePassword
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
@@ -141,6 +143,7 @@ fun RegisterScreen(
     var confirmPasswordError by remember { mutableStateOf("") }
     var generalError by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var verificationMessage by remember { mutableStateOf("") }
     val auth = Firebase.auth
     val activity = LocalView.current.context as Activity
 
@@ -160,10 +163,24 @@ fun RegisterScreen(
         isLoading = true
         auth.createUserWithEmailAndPassword(email.trim(), password)
             .addOnCompleteListener(activity) { task ->
-                isLoading = false
                 if (task.isSuccessful) {
-                    onSuccessfulRegister()
+                    val user = Firebase.auth.currentUser
+                    user?.sendEmailVerification()
+                        ?.addOnCompleteListener { verifyTask ->
+                            isLoading = false
+                            Firebase.auth.signOut()
+                            if (verifyTask.isSuccessful) {
+                                verificationMessage = "Te enviamos un correo de verificación. Revisa tu bandeja de entrada."
+                                scope.launch {
+                                    delay(2500)
+                                    onClickBack()
+                                }
+                            } else {
+                                generalError = "No fue posible enviar el correo de verificación."
+                            }
+                        }
                 } else {
+                    isLoading = false
                     generalError = when (task.exception) {
                         is FirebaseAuthInvalidCredentialsException -> "El correo no tiene un formato válido"
                         is FirebaseAuthUserCollisionException -> "Ya existe una cuenta registrada con este correo"
@@ -463,6 +480,32 @@ fun RegisterScreen(
                                 Text(
                                     text = generalError,
                                     color = ErrorColor,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        // Banner de verificación enviada
+                        if (verificationMessage.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(AccentBlue.copy(alpha = 0.10f))
+                                    .border(1.dp, AccentBlue.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.CheckCircle, null,
+                                    tint = AccentBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = verificationMessage,
+                                    color = AccentBlue,
                                     fontSize = 13.sp,
                                     modifier = Modifier.weight(1f)
                                 )

@@ -8,12 +8,28 @@ import com.helbertquesada.gestor_proyectos_moviles.screens.HomeScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.LoginScreen
 import com.helbertquesada.gestor_proyectos_moviles.screens.RegisterScreen
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
+
+private fun isGoogleProvider(user: FirebaseUser): Boolean =
+    user.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
 
 @Composable
 fun NavigationApp() {
     val navController = rememberNavController()
-    val startDestination = if (Firebase.auth.currentUser != null) "home" else "login"
+    val startDestination = run {
+        val user = Firebase.auth.currentUser
+        when {
+            user == null -> "login"
+            isGoogleProvider(user) -> "home"
+            user.isEmailVerified -> "home"
+            else -> {
+                Firebase.auth.signOut()
+                "login"
+            }
+        }
+    }
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {

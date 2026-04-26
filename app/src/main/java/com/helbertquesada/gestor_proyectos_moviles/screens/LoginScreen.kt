@@ -152,10 +152,22 @@ fun LoginScreen(
         isLoading = true
         auth.signInWithEmailAndPassword(email.trim(), password)
             .addOnCompleteListener(activity) { task ->
-                isLoading = false
                 if (task.isSuccessful) {
-                    onSuccessfulLogin()
+                    val user = Firebase.auth.currentUser
+                    user?.reload()?.addOnCompleteListener {
+                        isLoading = false
+                        if (user.isEmailVerified) {
+                            onSuccessfulLogin()
+                        } else {
+                            Firebase.auth.signOut()
+                            generalError = "Debes verificar tu correo antes de iniciar sesión."
+                        }
+                    } ?: run {
+                        isLoading = false
+                        onSuccessfulLogin()
+                    }
                 } else {
+                    isLoading = false
                     generalError = when (task.exception) {
                         is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrectos"
                         is FirebaseAuthInvalidUserException -> "No existe una cuenta asociada a este correo"
