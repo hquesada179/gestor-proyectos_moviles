@@ -2,8 +2,8 @@ package com.helbertquesada.gestor_proyectos_moviles.repository
 
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDetalleDto
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDto
+import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoSprintDto
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoTareaDto
-import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoTareasResponseDto
 import com.helbertquesada.gestor_proyectos_moviles.network.RetrofitClient
 
 class ProyectoRepository {
@@ -19,5 +19,9 @@ class ProyectoRepository {
 
     suspend fun getTareasByProyecto(id: Int): Result<List<ProyectoTareaDto>> = runCatching {
         api.getTareasByProyecto(id).tareas
+    }
+
+    suspend fun getSprintsByProyecto(id: Int): Result<List<ProyectoSprintDto>> = runCatching {
+        api.getSprintsByProyecto(id).sprints
     }
 }

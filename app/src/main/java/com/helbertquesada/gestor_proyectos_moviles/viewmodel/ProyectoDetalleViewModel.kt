@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDetalleDto
+import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoSprintDto
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoTareaDto
 import com.helbertquesada.gestor_proyectos_moviles.repository.ProyectoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// ─── Estados del detalle de proyecto ─────────────────────────────────────────
+// ─── Estado del detalle de proyecto ──────────────────────────────────────────
 
 sealed interface ProyectoDetalleUiState {
     data object Loading : ProyectoDetalleUiState
@@ -20,12 +21,20 @@ sealed interface ProyectoDetalleUiState {
     data class Error(val message: String) : ProyectoDetalleUiState
 }
 
-// ─── Estados de las tareas ────────────────────────────────────────────────────
+// ─── Estado de las tareas ─────────────────────────────────────────────────────
 
 sealed interface TareasUiState {
     data object Loading : TareasUiState
     data class Success(val tareas: List<ProyectoTareaDto>) : TareasUiState
     data class Error(val message: String) : TareasUiState
+}
+
+// ─── Estado de los sprints ────────────────────────────────────────────────────
+
+sealed interface SprintsUiState {
+    data object Loading : SprintsUiState
+    data class Success(val sprints: List<ProyectoSprintDto>) : SprintsUiState
+    data class Error(val message: String) : SprintsUiState
 }
 
 // ─── ViewModel ────────────────────────────────────────────────────────────────
@@ -40,10 +49,14 @@ class ProyectoDetalleViewModel(private val proyectoId: Int) : ViewModel() {
     private val _tareasUiState = MutableStateFlow<TareasUiState>(TareasUiState.Loading)
     val tareasUiState: StateFlow<TareasUiState> = _tareasUiState.asStateFlow()
 
+    private val _sprintsUiState = MutableStateFlow<SprintsUiState>(SprintsUiState.Loading)
+    val sprintsUiState: StateFlow<SprintsUiState> = _sprintsUiState.asStateFlow()
+
     init {
-        // Both requests start in parallel on creation
+        // Three requests start in parallel on creation
         loadDetalle()
         loadTareas()
+        loadSprints()
     }
 
     fun loadDetalle() {
@@ -66,9 +79,20 @@ class ProyectoDetalleViewModel(private val proyectoId: Int) : ViewModel() {
         }
     }
 
+    fun loadSprints() {
+        viewModelScope.launch {
+            _sprintsUiState.value = SprintsUiState.Loading
+            repository.getSprintsByProyecto(proyectoId).fold(
+                onSuccess = { _sprintsUiState.value = SprintsUiState.Success(it) },
+                onFailure = { _sprintsUiState.value = SprintsUiState.Error(it.message ?: "Error al cargar los sprints") }
+            )
+        }
+    }
+
     fun reload() {
         loadDetalle()
         loadTareas()
+        loadSprints()
     }
 
     companion object {

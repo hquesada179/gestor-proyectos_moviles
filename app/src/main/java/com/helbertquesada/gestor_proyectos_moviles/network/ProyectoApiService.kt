@@ -13,4 +13,7 @@ interface ProyectoApiService {
 
     @GET("api/proyectos/{id}/tareas")
     suspend fun getTareasByProyecto(@Path("id") id: Int): ProyectoTareasResponseDto
+
+    @GET("api/proyectos/{id}/sprints")
+    suspend fun getSprintsByProyecto(@Path("id") id: Int): ProyectoSprintsResponseDto
 }

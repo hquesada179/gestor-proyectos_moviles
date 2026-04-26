@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -53,12 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDetalleDto
+import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoSprintDto
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoTareaDto
-import com.helbertquesada.gestor_proyectos_moviles.network.SprintResumenDto
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentAmber
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlue
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlueLight
-import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentIndigo
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentViolet
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentVioletLight
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.BorderDefault
@@ -72,6 +70,7 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextPrimary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextSecondary
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoDetalleUiState
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoDetalleViewModel
+import com.helbertquesada.gestor_proyectos_moviles.viewmodel.SprintsUiState
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.TareasUiState
 
 // ─── Estado → color ───────────────────────────────────────────────────────────
@@ -84,8 +83,6 @@ private fun estadoColor(estado: String?): Color = when (estado?.lowercase()?.tri
     "pendiente", "pending"                                           -> AccentVioletLight
     else                                                              -> AccentVioletLight
 }
-
-// ─── Prioridad → color ────────────────────────────────────────────────────────
 
 private fun prioridadColor(prioridad: String?): Color = when (prioridad?.lowercase()?.trim()) {
     "alta", "high", "urgente", "critica", "crítica" -> ErrorColor
@@ -102,8 +99,9 @@ fun ProjectDetailScreen(
     onBack: () -> Unit,
     viewModel: ProyectoDetalleViewModel = viewModel(factory = ProyectoDetalleViewModel.factory(projectId))
 ) {
-    val uiState      by viewModel.uiState.collectAsState()
-    val tareasUiState by viewModel.tareasUiState.collectAsState()
+    val uiState       by viewModel.uiState.collectAsState()
+    val tareasUiState  by viewModel.tareasUiState.collectAsState()
+    val sprintsUiState by viewModel.sprintsUiState.collectAsState()
 
     Scaffold(containerColor = DarkBackground) { innerPadding ->
         Column(
@@ -126,9 +124,11 @@ fun ProjectDetailScreen(
 
                 is ProyectoDetalleUiState.Success ->
                     DetailContent(
-                        proyecto      = (uiState as ProyectoDetalleUiState.Success).proyecto,
-                        tareasUiState = tareasUiState,
-                        onRetryTareas = { viewModel.loadTareas() }
+                        proyecto       = (uiState as ProyectoDetalleUiState.Success).proyecto,
+                        tareasUiState  = tareasUiState,
+                        sprintsUiState = sprintsUiState,
+                        onRetryTareas  = { viewModel.loadTareas() },
+                        onRetrySprints = { viewModel.loadSprints() }
                     )
             }
         }
@@ -167,7 +167,7 @@ private fun DetailHeader(onBack: () -> Unit) {
     }
 }
 
-// ─── Loading / Error ─────────────────────────────────────────────────────────
+// ─── Loading / Error de proyecto ─────────────────────────────────────────────
 
 @Composable
 private fun DetailLoading() {
@@ -211,7 +211,9 @@ private fun DetailError(message: String, onRetry: () -> Unit) {
 private fun DetailContent(
     proyecto: ProyectoDetalleDto,
     tareasUiState: TareasUiState,
-    onRetryTareas: () -> Unit
+    sprintsUiState: SprintsUiState,
+    onRetryTareas: () -> Unit,
+    onRetrySprints: () -> Unit
 ) {
     val accentColor = estadoColor(proyecto.estado)
 
@@ -250,8 +252,8 @@ private fun DetailContent(
 
         // ── Stats row ─────────────────────────────────────────────────
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatChip(Modifier.weight(1f), Icons.Filled.CheckBox,                  "TAREAS",   "${proyecto.tasksCount}",   AccentBlue)
-            StatChip(Modifier.weight(1f), Icons.AutoMirrored.Filled.Assignment,   "SPRINTS",  "${proyecto.sprintsCount}", AccentVioletLight)
+            StatChip(Modifier.weight(1f), Icons.Filled.CheckBox,                "TAREAS",  "${proyecto.tasksCount}",   AccentBlue)
+            StatChip(Modifier.weight(1f), Icons.AutoMirrored.Filled.Assignment, "SPRINTS", "${proyecto.sprintsCount}", AccentVioletLight)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -280,39 +282,23 @@ private fun DetailContent(
             Spacer(Modifier.height(16.dp))
         }
 
-        // ── Tareas del proyecto (endpoint dedicado) ────────────────────
+        // ── Tareas del proyecto (endpoint dedicado) ───────────────────
         TareasSection(tareasUiState = tareasUiState, onRetry = onRetryTareas)
 
-        // ── Sprints embebidos (si el backend los retorna en el detalle) ─
-        val sprints = proyecto.sprints
-        if (!sprints.isNullOrEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Text("SPRINTS", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
-            Spacer(Modifier.height(8.dp))
-            Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(4.dp)) {
-                    sprints.forEachIndexed { index, sprint ->
-                        SprintItem(sprint)
-                        if (index < sprints.lastIndex)
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
-                    }
-                }
-            }
-        }
+        Spacer(Modifier.height(16.dp))
+
+        // ── Sprints del proyecto (endpoint dedicado) ──────────────────
+        SprintsSection(sprintsUiState = sprintsUiState, onRetry = onRetrySprints)
 
         Spacer(Modifier.height(28.dp))
     }
 }
 
-// ─── Sección de tareas (Loading / Empty / Error / List) ──────────────────────
+// ─── Sección de tareas ────────────────────────────────────────────────────────
 
 @Composable
 private fun TareasSection(tareasUiState: TareasUiState, onRetry: () -> Unit) {
-    // Header siempre visible
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         SectionLabel(Icons.Filled.CheckBox, "TAREAS DEL PROYECTO")
         Spacer(Modifier.weight(1f))
         if (tareasUiState is TareasUiState.Error) {
@@ -321,24 +307,43 @@ private fun TareasSection(tareasUiState: TareasUiState, onRetry: () -> Unit) {
             }
         }
     }
-
     Spacer(Modifier.height(8.dp))
-
     when (tareasUiState) {
-        is TareasUiState.Loading -> TareasLoading()
-        is TareasUiState.Error   -> TareasError(tareasUiState.message, onRetry)
-        is TareasUiState.Success -> {
-            if (tareasUiState.tareas.isEmpty()) {
-                TareasEmpty()
-            } else {
-                TareasList(tareasUiState.tareas)
-            }
-        }
+        is TareasUiState.Loading -> SubsectionLoading("Cargando tareas...")
+        is TareasUiState.Error   -> SubsectionError(tareasUiState.message, onRetry)
+        is TareasUiState.Success ->
+            if (tareasUiState.tareas.isEmpty()) SubsectionEmpty("Este proyecto aún no tiene tareas registradas.", Icons.Filled.CheckBox, AccentBlue)
+            else TareasList(tareasUiState.tareas)
     }
 }
 
+// ─── Sección de sprints ───────────────────────────────────────────────────────
+
 @Composable
-private fun TareasLoading() {
+private fun SprintsSection(sprintsUiState: SprintsUiState, onRetry: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        SectionLabel(Icons.AutoMirrored.Filled.Assignment, "SPRINTS DEL PROYECTO")
+        Spacer(Modifier.weight(1f))
+        if (sprintsUiState is SprintsUiState.Error) {
+            TextButton(onClick = onRetry, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                Text("Reintentar", color = AccentBlue, fontSize = 11.sp)
+            }
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+    when (sprintsUiState) {
+        is SprintsUiState.Loading -> SubsectionLoading("Cargando sprints...")
+        is SprintsUiState.Error   -> SubsectionError(sprintsUiState.message, onRetry)
+        is SprintsUiState.Success ->
+            if (sprintsUiState.sprints.isEmpty()) SubsectionEmpty("Este proyecto aún no tiene sprints registrados.", Icons.AutoMirrored.Filled.Assignment, AccentVioletLight)
+            else SprintsList(sprintsUiState.sprints)
+    }
+}
+
+// ─── Estados compartidos de subsecciones ─────────────────────────────────────
+
+@Composable
+private fun SubsectionLoading(label: String) {
     Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -346,13 +351,13 @@ private fun TareasLoading() {
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            Text("Cargando tareas...", color = TextSecondary, fontSize = 13.sp)
+            Text(label, color = TextSecondary, fontSize = 13.sp)
         }
     }
 }
 
 @Composable
-private fun TareasEmpty() {
+private fun SubsectionEmpty(message: String, icon: ImageVector, accent: Color) {
     Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
         Box(
             modifier = Modifier.padding(24.dp).fillMaxWidth(),
@@ -360,18 +365,17 @@ private fun TareasEmpty() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
-                        .background(AccentBlue.copy(alpha = 0.1f)),
+                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(accent.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
-                ) { Icon(Icons.Filled.CheckBox, null, tint = AccentBlue.copy(alpha = 0.5f), modifier = Modifier.size(22.dp)) }
-                Text("Este proyecto aún no tiene tareas registradas.", color = TextSecondary, fontSize = 13.sp)
+                ) { Icon(icon, null, tint = accent.copy(alpha = 0.5f), modifier = Modifier.size(22.dp)) }
+                Text(message, color = TextSecondary, fontSize = 13.sp)
             }
         }
     }
 }
 
 @Composable
-private fun TareasError(message: String, onRetry: () -> Unit) {
+private fun SubsectionError(message: String, onRetry: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = ErrorColor.copy(alpha = 0.06f),
@@ -385,13 +389,12 @@ private fun TareasError(message: String, onRetry: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(Icons.Filled.Warning, null, tint = ErrorColor, modifier = Modifier.size(20.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("No se pudieron cargar las tareas", color = ErrorColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Text(message, color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
+            Text(message, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
+
+// ─── Lista de tareas ──────────────────────────────────────────────────────────
 
 @Composable
 private fun TareasList(tareas: List<ProyectoTareaDto>) {
@@ -416,39 +419,23 @@ private fun TareaItem(tarea: ProyectoTareaDto) {
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Ícono de estado
         Box(
-            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
-                .background(estadoAccent.copy(alpha = 0.12f)),
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(estadoAccent.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) { Icon(Icons.Filled.CheckCircle, null, tint = estadoAccent, modifier = Modifier.size(18.dp)) }
 
-        // Info principal
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                tarea.displayTitle,
-                color = TextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            // Fila de chips: estado + prioridad
+            Text(tarea.displayTitle, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 tarea.estado?.let { MiniChip(it.replaceFirstChar { c -> c.uppercase() }, estadoAccent) }
                 tarea.prioridad?.let { MiniChip(it.replaceFirstChar { c -> c.uppercase() }, prioridadAccent) }
             }
-
-            // Asignado
             tarea.displayAsignado?.let { asignado ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(Icons.Filled.Person, null, tint = TextDisabled, modifier = Modifier.size(11.dp))
                     Text(asignado, color = TextDisabled, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-
-            // Fechas
             val fechas = listOfNotNull(
                 tarea.fechaInicio?.take(10)?.let { "Inicio: $it" },
                 tarea.fechaFin?.take(10)?.let { "Fin: $it" }
@@ -463,6 +450,60 @@ private fun TareaItem(tarea: ProyectoTareaDto) {
     }
 }
 
+// ─── Lista de sprints ─────────────────────────────────────────────────────────
+
+@Composable
+private fun SprintsList(sprints: List<ProyectoSprintDto>) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
+        Column(modifier = Modifier.padding(4.dp)) {
+            sprints.forEachIndexed { index, sprint ->
+                SprintItem(sprint)
+                if (index < sprints.lastIndex)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SprintItem(sprint: ProyectoSprintDto) {
+    val estadoAccent = estadoColor(sprint.estado)
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(estadoAccent.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) { Icon(Icons.AutoMirrored.Filled.Assignment, null, tint = estadoAccent, modifier = Modifier.size(18.dp)) }
+
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(sprint.displayNombre, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
+            sprint.estado?.let { MiniChip(it.replaceFirstChar { c -> c.uppercase() }, estadoAccent) }
+
+            if (!sprint.descripcion.isNullOrBlank()) {
+                Text(sprint.descripcion, color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+
+            val fechas = listOfNotNull(
+                sprint.fechaInicio?.take(10)?.let { "Inicio: $it" },
+                sprint.fechaFin?.take(10)?.let { "Fin: $it" }
+            ).joinToString("   ")
+            if (fechas.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Filled.CalendarToday, null, tint = TextDisabled, modifier = Modifier.size(11.dp))
+                    Text(fechas, color = TextDisabled, fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
+// ─── Helpers compartidos ──────────────────────────────────────────────────────
+
 @Composable
 private fun MiniChip(label: String, color: Color) {
     Box(
@@ -473,8 +514,6 @@ private fun MiniChip(label: String, color: Color) {
             .padding(horizontal = 7.dp, vertical = 2.dp)
     ) { Text(label, color = color, fontSize = 9.sp, fontWeight = FontWeight.SemiBold) }
 }
-
-// ─── Helpers compartidos ──────────────────────────────────────────────────────
 
 @Composable
 private fun EstadoBadge(estado: String?, color: Color) {
@@ -487,10 +526,7 @@ private fun EstadoBadge(estado: String?, color: Color) {
     ) {
         Text(
             estado?.replaceFirstChar { it.uppercase() } ?: "Sin estado",
-            color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
+            color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp
         )
     }
 }
@@ -529,26 +565,5 @@ private fun DateRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = TextSecondary, fontSize = 13.sp)
         Text(value, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun SprintItem(sprint: SprintResumenDto) {
-    val stateColor = estadoColor(sprint.estado)
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(9.dp)).background(stateColor.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) { Icon(Icons.AutoMirrored.Filled.Assignment, null, tint = stateColor, modifier = Modifier.size(16.dp)) }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(sprint.nombre ?: "Sprint", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val dates = listOfNotNull(sprint.fechaInicio?.take(10), sprint.fechaFin?.take(10)).joinToString(" → ")
-            val meta  = listOfNotNull(sprint.estado?.replaceFirstChar { it.uppercase() }, dates.ifBlank { null }).joinToString(" · ")
-            if (meta.isNotBlank()) Text(meta, color = TextSecondary, fontSize = 11.sp)
-        }
     }
 }
