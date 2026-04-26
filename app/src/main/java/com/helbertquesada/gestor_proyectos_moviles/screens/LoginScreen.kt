@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -134,6 +135,7 @@ fun LoginScreen(
     var emailError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
     var generalError by remember { mutableStateOf("") }
+    var resetSuccessMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val auth = Firebase.auth
     val activity = LocalView.current.context as Activity
@@ -158,6 +160,32 @@ fun LoginScreen(
                         is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrectos"
                         is FirebaseAuthInvalidUserException -> "No existe una cuenta asociada a este correo"
                         else -> "No fue posible iniciar sesión. Intenta nuevamente"
+                    }
+                }
+            }
+    }
+
+    fun attemptPasswordReset() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        val (emailOk, emailMsg) = validateEmail(email)
+        if (!emailOk) {
+            emailError = emailMsg
+            return
+        }
+        emailError = ""
+        generalError = ""
+        resetSuccessMessage = ""
+        isLoading = true
+        auth.sendPasswordResetEmail(email.trim())
+            .addOnCompleteListener(activity) { task ->
+                isLoading = false
+                if (task.isSuccessful) {
+                    resetSuccessMessage = "Te enviamos un correo para restablecer tu contraseña"
+                } else {
+                    generalError = when (task.exception) {
+                        is FirebaseAuthInvalidUserException -> "No existe una cuenta asociada a este correo"
+                        else -> "No fue posible enviar el correo de recuperación"
                     }
                 }
             }
@@ -252,7 +280,12 @@ fun LoginScreen(
                             FieldLabel("CORREO ELECTRÓNICO")
                             OutlinedTextField(
                                 value = email,
-                                onValueChange = { email = it; emailError = "" },
+                                onValueChange = {
+                                    email = it
+                                    emailError = ""
+                                    generalError = ""
+                                    resetSuccessMessage = ""
+                                },
                                 placeholder = { Text("ejemplo@dominio.com", color = TextHint) },
                                 leadingIcon = {
                                     Icon(
@@ -298,7 +331,9 @@ fun LoginScreen(
                                     text = "¿Olvidaste tu contraseña?",
                                     color = AccentBlue,
                                     fontSize = 11.sp,
-                                    modifier = Modifier.clickable { }
+                                    modifier = Modifier.clickable(enabled = !isLoading) {
+                                        attemptPasswordReset()
+                                    }
                                 )
                             }
                             OutlinedTextField(
@@ -383,6 +418,32 @@ fun LoginScreen(
                                 Text(
                                     text = generalError,
                                     color = ErrorColor,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        // Banner de éxito (recuperación de contraseña)
+                        if (resetSuccessMessage.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(AccentBlue.copy(alpha = 0.10f))
+                                    .border(1.dp, AccentBlue.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.CheckCircle, null,
+                                    tint = AccentBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = resetSuccessMessage,
+                                    color = AccentBlue,
                                     fontSize = 13.sp,
                                     modifier = Modifier.weight(1f)
                                 )
