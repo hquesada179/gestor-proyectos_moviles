@@ -1,5 +1,10 @@
 package com.helbertquesada.gestor_proyectos_moviles.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -65,6 +71,9 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextPrimary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextSecondary
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoUiState
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoViewModel
+import kotlinx.coroutines.delay
+
+private const val POLL_INTERVAL_MS = 10_000L
 
 @Composable
 fun ProjectsScreen(
@@ -72,6 +81,23 @@ fun ProjectsScreen(
     viewModel: ProyectoViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Polling loop — starts on enter, cancels automatically on leave (LaunchedEffect lifecycle)
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.loadProyectos()
+            delay(POLL_INTERVAL_MS)
+        }
+    }
+
+    // Auto-dismiss the refresh-error banner after 5 s
+    val refreshError = (uiState as? ProyectoUiState.Success)?.refreshError
+    LaunchedEffect(refreshError) {
+        if (refreshError != null) {
+            delay(5_000L)
+            viewModel.clearRefreshError()
+        }
+    }
 
     Scaffold(
         containerColor = DarkBackground,
@@ -84,7 +110,7 @@ fun ProjectsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
         ) {
-            ProjectsHeader()
+            ProjectsHeader(isPolling = uiState is ProyectoUiState.Success)
 
             Spacer(Modifier.height(16.dp))
             ProjectStatusCard(modifier = Modifier.padding(horizontal = 16.dp))
@@ -95,12 +121,22 @@ fun ProjectsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            Spacer(Modifier.height(20.dp))
+            // Non-blocking refresh-error banner (only when we already have data)
+            AnimatedVisibility(
+                visible = refreshError != null,
+                enter = slideInVertically { -it } + fadeIn(),
+                exit  = slideOutVertically { -it } + fadeOut()
+            ) {
+                RefreshErrorBanner(
+                    message = refreshError ?: "",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
 
-            // ── Proyectos reales desde Laravel ────────────────────────────
+            Spacer(Modifier.height(12.dp))
             ProyectosSection(
-                uiState = uiState,
-                onRetry = { viewModel.loadProyectos() },
+                uiState  = uiState,
+                onRetry  = { viewModel.loadProyectos() },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -125,7 +161,7 @@ fun ProjectsScreen(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                "CONECTADO A LARAVEL API",
+                "SINCRONIZACIÓN AUTOMÁTICA CADA 10 SEG",
                 color = TextDisabled,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Medium,
@@ -134,6 +170,31 @@ fun ProjectsScreen(
             )
             Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+// ─── Refresh-error banner ─────────────────────────────────────────────────────
+
+@Composable
+private fun RefreshErrorBanner(message: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(ErrorColor.copy(alpha = 0.08f))
+            .border(1.dp, ErrorColor.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(Icons.Filled.Warning, null, tint = ErrorColor, modifier = Modifier.size(16.dp))
+        Text(
+            text = "Sin conexión – mostrando datos anteriores",
+            color = ErrorColor,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -148,6 +209,7 @@ private fun ProyectosSection(
     when (uiState) {
         is ProyectoUiState.Loading -> ProyectosLoading(modifier)
         is ProyectoUiState.Error   -> ProyectosError(uiState.message, onRetry, modifier)
+        // refreshError is handled by the banner above — don't show it here
         is ProyectoUiState.Success -> ProyectosSuccess(uiState.proyectos, modifier)
     }
 }
@@ -201,15 +263,15 @@ private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = 
         return
     }
 
-    val activos = proyectos.filter { it.estado?.lowercase() == "activo" || it.estado?.lowercase() == "en progreso" }
+    val activos = proyectos.filter { it.estado?.lowercase() in listOf("activo", "en progreso") }
     val otros   = proyectos.filter { it !in activos }
 
     if (activos.isNotEmpty()) {
         ProyectosSectionCard(
-            title = "Proyectos activos",
-            badge = "${activos.size} ACTIVOS",
+            title      = "Proyectos activos",
+            badge      = "${activos.size} ACTIVOS",
             badgeColor = AccentBlue,
-            modifier = modifier
+            modifier   = modifier
         ) {
             activos.forEachIndexed { index, proyecto ->
                 ProjectListItem(proyecto)
@@ -222,10 +284,10 @@ private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = 
     if (otros.isNotEmpty()) {
         Spacer(Modifier.height(12.dp))
         ProyectosSectionCard(
-            title = "Otros proyectos",
-            badge = "${otros.size} TOTAL",
+            title      = "Otros proyectos",
+            badge      = "${otros.size} TOTAL",
             badgeColor = AccentVioletLight,
-            modifier = modifier
+            modifier   = modifier
         ) {
             otros.forEachIndexed { index, proyecto ->
                 ProjectListItem(proyecto)
@@ -234,27 +296,12 @@ private fun ProyectosSuccess(proyectos: List<ProyectoDto>, modifier: Modifier = 
             }
         }
     }
-
-    if (activos.isEmpty() && otros.isEmpty()) {
-        ProyectosSectionCard(
-            title = "Todos los proyectos",
-            badge = "${proyectos.size} TOTAL",
-            badgeColor = AccentBlue,
-            modifier = modifier
-        ) {
-            proyectos.forEachIndexed { index, proyecto ->
-                ProjectListItem(proyecto)
-                if (index < proyectos.lastIndex)
-                    HorizontalDivider(color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
-            }
-        }
-    }
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// ─── Header (con indicador de actividad de fondo) ────────────────────────────
 
 @Composable
-private fun ProjectsHeader() {
+private fun ProjectsHeader(isPolling: Boolean) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth().background(DarkBackground)
@@ -267,6 +314,12 @@ private fun ProjectsHeader() {
                 contentAlignment = Alignment.Center
             ) { Icon(Icons.Filled.GridView, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
             Text("Proyectos", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            // Small live dot — visible only when polling (has data)
+            if (isPolling) {
+                Box(
+                    modifier = Modifier.size(8.dp).clip(CircleShape).background(SuccessColor)
+                )
+            }
             IconButton(onClick = {}, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Filled.Notifications, null, tint = TextSecondary, modifier = Modifier.size(22.dp))
             }
