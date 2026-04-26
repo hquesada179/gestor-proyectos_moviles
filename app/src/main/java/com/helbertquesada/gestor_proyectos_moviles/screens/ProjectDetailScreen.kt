@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -35,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,8 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDetalleDto
+import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoTareaDto
 import com.helbertquesada.gestor_proyectos_moviles.network.SprintResumenDto
-import com.helbertquesada.gestor_proyectos_moviles.network.TareaResumenDto
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentAmber
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlue
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.AccentBlueLight
@@ -69,15 +72,26 @@ import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextPrimary
 import com.helbertquesada.gestor_proyectos_moviles.ui.theme.TextSecondary
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoDetalleUiState
 import com.helbertquesada.gestor_proyectos_moviles.viewmodel.ProyectoDetalleViewModel
+import com.helbertquesada.gestor_proyectos_moviles.viewmodel.TareasUiState
 
-// ─── Color por estado ─────────────────────────────────────────────────────────
+// ─── Estado → color ───────────────────────────────────────────────────────────
 
 private fun estadoColor(estado: String?): Color = when (estado?.lowercase()?.trim()) {
-    "activo", "en progreso", "active"    -> SuccessColor
-    "completado", "finalizado", "done"   -> AccentBlue
-    "pausado", "en pausa", "paused"      -> AccentAmber
-    "cancelado", "archivado"             -> ErrorColor
-    else                                  -> AccentVioletLight
+    "activo", "en progreso", "en_progreso", "active", "in_progress" -> SuccessColor
+    "completado", "completada", "finalizado", "done"                 -> AccentBlue
+    "pausado", "pausada", "en pausa", "paused"                       -> AccentAmber
+    "cancelado", "cancelada", "archivado"                            -> ErrorColor
+    "pendiente", "pending"                                           -> AccentVioletLight
+    else                                                              -> AccentVioletLight
+}
+
+// ─── Prioridad → color ────────────────────────────────────────────────────────
+
+private fun prioridadColor(prioridad: String?): Color = when (prioridad?.lowercase()?.trim()) {
+    "alta", "high", "urgente", "critica", "crítica" -> ErrorColor
+    "media", "medium", "normal"                      -> AccentAmber
+    "baja", "low"                                    -> SuccessColor
+    else                                             -> TextDisabled
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -88,7 +102,8 @@ fun ProjectDetailScreen(
     onBack: () -> Unit,
     viewModel: ProyectoDetalleViewModel = viewModel(factory = ProyectoDetalleViewModel.factory(projectId))
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState      by viewModel.uiState.collectAsState()
+    val tareasUiState by viewModel.tareasUiState.collectAsState()
 
     Scaffold(containerColor = DarkBackground) { innerPadding ->
         Column(
@@ -105,13 +120,15 @@ fun ProjectDetailScreen(
 
                 is ProyectoDetalleUiState.Error ->
                     DetailError(
-                        message  = (uiState as ProyectoDetalleUiState.Error).message,
-                        onRetry  = { viewModel.loadDetalle() }
+                        message = (uiState as ProyectoDetalleUiState.Error).message,
+                        onRetry = { viewModel.reload() }
                     )
 
                 is ProyectoDetalleUiState.Success ->
                     DetailContent(
-                        proyecto = (uiState as ProyectoDetalleUiState.Success).proyecto
+                        proyecto      = (uiState as ProyectoDetalleUiState.Success).proyecto,
+                        tareasUiState = tareasUiState,
+                        onRetryTareas = { viewModel.loadTareas() }
                     )
             }
         }
@@ -132,12 +149,7 @@ private fun DetailHeader(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             IconButton(onClick = onBack) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(22.dp)
-                )
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = TextPrimary, modifier = Modifier.size(22.dp))
             }
             Box(
                 modifier = Modifier.size(28.dp).clip(RoundedCornerShape(7.dp)).background(AccentViolet),
@@ -155,7 +167,7 @@ private fun DetailHeader(onBack: () -> Unit) {
     }
 }
 
-// ─── Loading ──────────────────────────────────────────────────────────────────
+// ─── Loading / Error ─────────────────────────────────────────────────────────
 
 @Composable
 private fun DetailLoading() {
@@ -166,8 +178,6 @@ private fun DetailLoading() {
         }
     }
 }
-
-// ─── Error ────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun DetailError(message: String, onRetry: () -> Unit) {
@@ -195,10 +205,14 @@ private fun DetailError(message: String, onRetry: () -> Unit) {
     }
 }
 
-// ─── Content ──────────────────────────────────────────────────────────────────
+// ─── Content ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun DetailContent(proyecto: ProyectoDetalleDto) {
+private fun DetailContent(
+    proyecto: ProyectoDetalleDto,
+    tareasUiState: TareasUiState,
+    onRetryTareas: () -> Unit
+) {
     val accentColor = estadoColor(proyecto.estado)
 
     Column(
@@ -219,10 +233,7 @@ private fun DetailContent(proyecto: ProyectoDetalleDto) {
                 .padding(20.dp)
         ) {
             Column {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(accentColor))
                     EstadoBadge(estado = proyecto.estado, color = accentColor)
                 }
@@ -239,61 +250,43 @@ private fun DetailContent(proyecto: ProyectoDetalleDto) {
 
         // ── Stats row ─────────────────────────────────────────────────
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatChip(Modifier.weight(1f), Icons.Filled.CheckBox,     "TAREAS",   "${proyecto.tasksCount}",   AccentBlue)
-            StatChip(Modifier.weight(1f), Icons.Filled.Refresh,      "SPRINTS",  "${proyecto.sprintsCount}", AccentVioletLight)
+            StatChip(Modifier.weight(1f), Icons.Filled.CheckBox,                  "TAREAS",   "${proyecto.tasksCount}",   AccentBlue)
+            StatChip(Modifier.weight(1f), Icons.AutoMirrored.Filled.Assignment,   "SPRINTS",  "${proyecto.sprintsCount}", AccentVioletLight)
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // ── Dates card ────────────────────────────────────────────────
+        // ── Fechas ────────────────────────────────────────────────────
         if (!proyecto.fechaInicio.isNullOrBlank() || !proyecto.fechaFinEstimada.isNullOrBlank()) {
             Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SectionLabel(Icons.Filled.CalendarToday, "FECHAS")
-                    proyecto.fechaInicio?.let {
-                        DateRow(label = "Inicio", value = it)
-                    }
-                    proyecto.fechaFinEstimada?.let {
-                        DateRow(label = "Fin estimado", value = it)
-                    }
+                    proyecto.fechaInicio?.takeIf { it.isNotBlank() }?.let { DateRow("Inicio", it.take(10)) }
+                    proyecto.fechaFinEstimada?.takeIf { it.isNotBlank() }?.let { DateRow("Fin estimado", it.take(10)) }
                 }
             }
             Spacer(Modifier.height(12.dp))
         }
 
-        // ── Info extra (created_at) ────────────────────────────────────
+        // ── Info extra ────────────────────────────────────────────────
         if (!proyecto.createdAt.isNullOrBlank()) {
             Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     SectionLabel(Icons.Filled.Info, "INFORMACIÓN")
-                    DateRow(label = "Creado", value = proyecto.createdAt.take(10))
-                    proyecto.updatedAt?.let { DateRow(label = "Actualizado", value = it.take(10)) }
+                    DateRow("Creado", proyecto.createdAt.take(10))
+                    proyecto.updatedAt?.takeIf { it.isNotBlank() }?.let { DateRow("Actualizado", it.take(10)) }
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
         }
 
-        // ── Tareas (solo si el backend las retorna) ────────────────────
-        val tareas = proyecto.tareas?.filter { it.displayName != "Sin título" || it.estado != null }
-        if (!tareas.isNullOrEmpty()) {
-            Spacer(Modifier.height(4.dp))
-            Text("TAREAS DEL PROYECTO", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
-            Spacer(Modifier.height(8.dp))
-            Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(4.dp)) {
-                    tareas.forEachIndexed { index, tarea ->
-                        TareaItem(tarea)
-                        if (index < tareas.lastIndex)
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-        }
+        // ── Tareas del proyecto (endpoint dedicado) ────────────────────
+        TareasSection(tareasUiState = tareasUiState, onRetry = onRetryTareas)
 
-        // ── Sprints (solo si el backend los retorna) ───────────────────
+        // ── Sprints embebidos (si el backend los retorna en el detalle) ─
         val sprints = proyecto.sprints
         if (!sprints.isNullOrEmpty()) {
+            Spacer(Modifier.height(16.dp))
             Text("SPRINTS", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
             Spacer(Modifier.height(8.dp))
             Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
@@ -305,14 +298,183 @@ private fun DetailContent(proyecto: ProyectoDetalleDto) {
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(28.dp))
     }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Sección de tareas (Loading / Empty / Error / List) ──────────────────────
+
+@Composable
+private fun TareasSection(tareasUiState: TareasUiState, onRetry: () -> Unit) {
+    // Header siempre visible
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SectionLabel(Icons.Filled.CheckBox, "TAREAS DEL PROYECTO")
+        Spacer(Modifier.weight(1f))
+        if (tareasUiState is TareasUiState.Error) {
+            TextButton(onClick = onRetry, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                Text("Reintentar", color = AccentBlue, fontSize = 11.sp)
+            }
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+
+    when (tareasUiState) {
+        is TareasUiState.Loading -> TareasLoading()
+        is TareasUiState.Error   -> TareasError(tareasUiState.message, onRetry)
+        is TareasUiState.Success -> {
+            if (tareasUiState.tareas.isEmpty()) {
+                TareasEmpty()
+            } else {
+                TareasList(tareasUiState.tareas)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TareasLoading() {
+    Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Text("Cargando tareas...", color = TextSecondary, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun TareasEmpty() {
+    Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
+        Box(
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
+                        .background(AccentBlue.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) { Icon(Icons.Filled.CheckBox, null, tint = AccentBlue.copy(alpha = 0.5f), modifier = Modifier.size(22.dp)) }
+                Text("Este proyecto aún no tiene tareas registradas.", color = TextSecondary, fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TareasError(message: String, onRetry: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = ErrorColor.copy(alpha = 0.06f),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .border(1.dp, ErrorColor.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(Icons.Filled.Warning, null, tint = ErrorColor, modifier = Modifier.size(20.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("No se pudieron cargar las tareas", color = ErrorColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(message, color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TareasList(tareas: List<ProyectoTareaDto>) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = DarkCard, shape = RoundedCornerShape(14.dp)) {
+        Column(modifier = Modifier.padding(4.dp)) {
+            tareas.forEachIndexed { index, tarea ->
+                TareaItem(tarea)
+                if (index < tareas.lastIndex)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), color = BorderDefault.copy(alpha = 0.4f), thickness = 0.5.dp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TareaItem(tarea: ProyectoTareaDto) {
+    val estadoAccent    = estadoColor(tarea.estado)
+    val prioridadAccent = prioridadColor(tarea.prioridad)
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Ícono de estado
+        Box(
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                .background(estadoAccent.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) { Icon(Icons.Filled.CheckCircle, null, tint = estadoAccent, modifier = Modifier.size(18.dp)) }
+
+        // Info principal
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                tarea.displayTitle,
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // Fila de chips: estado + prioridad
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                tarea.estado?.let { MiniChip(it.replaceFirstChar { c -> c.uppercase() }, estadoAccent) }
+                tarea.prioridad?.let { MiniChip(it.replaceFirstChar { c -> c.uppercase() }, prioridadAccent) }
+            }
+
+            // Asignado
+            tarea.displayAsignado?.let { asignado ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Filled.Person, null, tint = TextDisabled, modifier = Modifier.size(11.dp))
+                    Text(asignado, color = TextDisabled, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+
+            // Fechas
+            val fechas = listOfNotNull(
+                tarea.fechaInicio?.take(10)?.let { "Inicio: $it" },
+                tarea.fechaFin?.take(10)?.let { "Fin: $it" }
+            ).joinToString("   ")
+            if (fechas.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Filled.CalendarToday, null, tint = TextDisabled, modifier = Modifier.size(11.dp))
+                    Text(fechas, color = TextDisabled, fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniChip(label: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(0.5.dp, color.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+            .padding(horizontal = 7.dp, vertical = 2.dp)
+    ) { Text(label, color = color, fontSize = 9.sp, fontWeight = FontWeight.SemiBold) }
+}
+
+// ─── Helpers compartidos ──────────────────────────────────────────────────────
 
 @Composable
 private fun EstadoBadge(estado: String?, color: Color) {
@@ -344,8 +506,7 @@ private fun StatChip(modifier: Modifier, icon: ImageVector, label: String, value
     ) {
         Column {
             Box(
-                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
-                    .background(accent.copy(alpha = 0.15f)),
+                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accent.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) { Icon(icon, null, tint = accent, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.height(10.dp))
@@ -372,27 +533,6 @@ private fun DateRow(label: String, value: String) {
 }
 
 @Composable
-private fun TareaItem(tarea: TareaResumenDto) {
-    val stateColor = estadoColor(tarea.estado)
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(9.dp))
-                .background(stateColor.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) { Icon(Icons.Filled.CheckCircle, null, tint = stateColor, modifier = Modifier.size(16.dp)) }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(tarea.displayName, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val meta = listOfNotNull(tarea.estado?.replaceFirstChar { it.uppercase() }, tarea.prioridad?.replaceFirstChar { it.uppercase() }).joinToString(" · ")
-            if (meta.isNotBlank()) Text(meta, color = TextSecondary, fontSize = 11.sp)
-        }
-    }
-}
-
-@Composable
 private fun SprintItem(sprint: SprintResumenDto) {
     val stateColor = estadoColor(sprint.estado)
     Row(
@@ -401,8 +541,7 @@ private fun SprintItem(sprint: SprintResumenDto) {
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
-            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(9.dp))
-                .background(stateColor.copy(alpha = 0.12f)),
+            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(9.dp)).background(stateColor.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) { Icon(Icons.AutoMirrored.Filled.Assignment, null, tint = stateColor, modifier = Modifier.size(16.dp)) }
         Column(modifier = Modifier.weight(1f)) {
