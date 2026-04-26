@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Planning Hub - Efficiency AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#273647",
+                    "error": "#ffb4ab",
+                    "background": "#051424",
+                    "outline-variant": "#46464b",
+                    "on-secondary-fixed-variant": "#3323cc",
+                    "tertiary-container": "#1d0039",
+                    "primary": "#c5c6ce",
+                    "primary-fixed": "#e2e2eb",
+                    "secondary-fixed": "#e2dfff",
+                    "on-primary-fixed": "#191b22",
+                    "on-primary-container": "#7b7c84",
+                    "secondary-container": "#3626ce",
+                    "on-tertiary-fixed-variant": "#6800b4",
+                    "tertiary-fixed": "#f0dbff",
+                    "tertiary": "#ddb8ff",
+                    "primary-fixed-dim": "#c5c6ce",
+                    "on-tertiary-container": "#a74bfe",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed": "#0f0069",
+                    "on-error": "#690005",
+                    "on-tertiary": "#490080",
+                    "on-primary-fixed-variant": "#45464e",
+                    "on-secondary-container": "#b3b1ff",
+                    "surface": "#051424",
+                    "surface-container-lowest": "#010f1f",
+                    "surface-container": "#122131",
+                    "secondary-fixed-dim": "#c3c0ff",
+                    "surface-dim": "#051424",
+                    "surface-container-low": "#0d1c2d",
+                    "on-secondary": "#1d00a5",
+                    "outline": "#909095",
+                    "on-tertiary-fixed": "#2c0051",
+                    "on-primary": "#2e3037",
+                    "surface-container-high": "#1c2b3c",
+                    "on-surface-variant": "#c7c6cb",
+                    "inverse-on-surface": "#233143",
+                    "secondary": "#c3c0ff",
+                    "on-surface": "#d4e4fa",
+                    "inverse-surface": "#d4e4fa",
+                    "inverse-primary": "#5d5e65",
+                    "on-background": "#d4e4fa",
+                    "surface-variant": "#273647",
+                    "surface-bright": "#2c3a4c",
+                    "on-error-container": "#ffdad6",
+                    "surface-tint": "#c5c6ce",
+                    "primary-container": "#0f1117",
+                    "tertiary-fixed-dim": "#ddb8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "32px",
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "label-caps": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-base": ["Inter"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0F1117] text-on-surface font-body-base min-h-screen pb-24">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-[#0F1117]/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20 flex justify-between items-center px-4 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="close-up professional headshot of a user profile avatar with clean minimalist lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdRiwpP2xIBznXXOLZDGpIIyMATkEQ5hfjjIiWh94sX7iWjHfGU5woO6vag_2_-v4KQZQKxFQUgbssO4B8RPvyVTXHrpAT2hy3Q7BdjfE5M7AX32OfsA0_a8f25MpFN0zb4k1Iu7sKBnzfRWl3_YeE4A28cwgkwDNMsgwlw6TBX1p0ILLohoQYOkmv6xY8LafThYp-culCFA0xKO0efaVDv0nDCd_MOaZzNojNEMUChFvYK6Z1vNYfd7SAHx8iRoC4nwgYu3qOPOxG"/>
+</div>
+<span class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 font-headline-md">Efficiency AI</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center text-slate-200 hover:bg-white/5 transition-colors rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-4 space-y-6 max-w-lg mx-auto">
+<!-- Hero Summary Section -->
+<section class="space-y-4">
+<div class="glass-card rounded-xl p-6 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 blur-3xl rounded-full"></div>
+<div class="space-y-1">
+<span class="font-label-caps text-label-caps text-on-primary-container">CURRENT STATUS</span>
+<h1 class="font-headline-md text-headline-md text-on-surface">Planning Hub</h1>
+</div>
+<div class="mt-4 grid grid-cols-2 gap-4">
+<div class="bg-white/5 p-3 rounded-lg">
+<p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Progress</p>
+<p class="text-xl font-bold text-blue-400">72%</p>
+</div>
+<div class="bg-white/5 p-3 rounded-lg">
+<p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Velocity</p>
+<p class="text-xl font-bold text-secondary">4.8x</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Command Input (AI Feature) -->
+<section class="sticky top-20 z-40">
+<div class="glass-card rounded-xl p-3 flex items-center gap-3 border-violet-500/30 ai-glow">
+<span class="material-symbols-outlined text-violet-400">auto_awesome</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-full placeholder:text-slate-500" placeholder="Ask AI to refine plan..." type="text"/>
+<button class="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-white text-sm">send</span>
+</button>
+</div>
+</section>
+<!-- Stacked Cards: Planning Items -->
+<section class="space-y-4">
+<!-- Casos de uso -->
+<div class="glass-card rounded-xl p-4 border-l-4 border-blue-500/50">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-400 text-lg">assignment_turned_in</span>
+</div>
+<h2 class="font-headline-md text-body-base font-semibold">Casos de uso</h2>
+</div>
+<span class="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2 py-1 rounded-full">12 ACTIVE</span>
+</div>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5">
+<span class="text-body-sm text-slate-300">User Authentication Flow</span>
+<span class="material-symbols-outlined text-slate-500 text-sm">chevron_right</span>
+</div>
+<div class="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5 opacity-60">
+<span class="text-body-sm text-slate-300">Data Export Module</span>
+<span class="material-symbols-outlined text-slate-500 text-sm">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Historias de usuario -->
+<div class="glass-card rounded-xl p-4 border-l-4 border-tertiary/50">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-lg">view_carousel</span>
+</div>
+<h2 class="font-headline-md text-body-base font-semibold">Historias de usuario</h2>
+</div>
+<span class="bg-tertiary/10 text-tertiary text-[10px] font-bold px-2 py-1 rounded-full">48 TOTAL</span>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+<div class="w-1 h-8 bg-green-500 rounded-full"></div>
+<div>
+<p class="text-body-sm text-slate-200">As a PM, I want a dash...</p>
+<p class="text-[10px] text-slate-500">8 Story Points • Sprint 24</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+<div class="w-1 h-8 bg-yellow-500 rounded-full"></div>
+<div>
+<p class="text-body-sm text-slate-200">As a developer, I need...</p>
+<p class="text-[10px] text-slate-500">5 Story Points • Backlog</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Actores y roles -->
+<div class="glass-card rounded-xl p-4 border-l-4 border-secondary/50">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-lg">group</span>
+</div>
+<h2 class="font-headline-md text-body-base font-semibold">Actores y roles</h2>
+</div>
+</div>
+<div class="flex -space-x-2 overflow-hidden mb-3">
+<img alt="Admin" class="inline-block h-8 w-8 rounded-full ring-2 ring-[#0F1117]" data-alt="profile photo of an executive administrator in a professional office setting with neutral lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1ZxM_FUnxiUtDRDxpQeDMBPcvUC761sUi8du1rhWvF2GqdzF0LxDHBS9UXdWIkIewu2XNcduaHrXLXeYl00NWXygyZPzM0ZQo4SH8b_lDejVtcR0NCp1Qph3b3n8rPVVKrg6ULd3PXU-UAARERO15byhCUUBFVX7B6UBqJqKkACa_sHt78uTYnUFTJ146pZ4PrkMfAVD7SFmCEFv_QnLWO8qLSxlPDobSF7x-adexgY5rvl__vn8jG4SczdvAGqD3OVPsGfKnN8lz"/>
+<img alt="Dev" class="inline-block h-8 w-8 rounded-full ring-2 ring-[#0F1117]" data-alt="profile photo of a software engineer wearing a headset in a home office with neon accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoDW_GN5pUvFjOdwEa2J-mHip1jPNUi4TSCyootDisCcpybbE4IlAu1d_Wj4_ZK70juhy8RAlsfhSETAH5PrvgPdKgIqn0ze7SS4CYDISP1Wo-lnMEOKBGq7Y0IH9FcJ-sfeZtYBNrF5OyE07JymgLiZorO34Jj3rQMMZNVfiKtJDMKb99dXEPauR4WlxD1Z_cR1T2keL3B1031e4uDYyr6_X5CV1eKmr_yu84lL16QSBWBXuhr5vU62MRB7xvfW_6T_qpuLk_nys6"/>
+<img alt="User" class="inline-block h-8 w-8 rounded-full ring-2 ring-[#0F1117]" data-alt="portrait of a young adult looking into the camera with a friendly expression and natural outdoor light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmUGA9QISiffTKM9d0y2gzY4VB0JyaVHBzeOGE1yPZ_t_19GrIijt2rwXIb9RhqiYr7iK-BwPfslIoetvnWW7HAK0hf1qkwQESs5fxsnR-04RkaieAKe_ffd8TI7IS_mQ8KNwf7wdFVcxsVK_rgkWqOfqCrfO34vlzBzlttSfboyaADqqa--IKCqlfs4MISOjE5SR5ee-DA06S6N5xaHY02fAXyLOk2CVAfmBSVcYqzRNtFFCSSxgjtgtTC-BKoCnTHFrdaFGmJtn4"/>
+<div class="flex items-center justify-center h-8 w-8 rounded-full bg-surface-container-highest ring-2 ring-[#0F1117] text-[10px] font-bold text-slate-300">+2</div>
+</div>
+<p class="text-body-sm text-slate-400">Defined hierarchy for 5 stakeholder groups with specific AI permission levels.</p>
+</div>
+</section>
+<!-- Primary CTA: Generate -->
+<section class="py-4">
+<button class="w-full h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl font-bold text-white shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-weight="fill">rocket_launch</span>
+<span>Generate Roadmap</span>
+</button>
+<p class="text-center text-[10px] text-slate-500 mt-3 uppercase tracking-tighter">Last synced with AI engine 2m ago</p>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-2xl bg-[#0F1117]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex justify-around items-center h-20 pb-4 px-2">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-['Inter'] text-[10px] font-medium">Dashboard</span>
+</a>
+<!-- Planning (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-blue-400 bg-blue-500/10 rounded-xl px-2 py-1 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium">Planning</span>
+</a>
+<!-- Requirements -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-['Inter'] text-[10px] font-medium">Requirements</span>
+</a>
+<!-- Scrum -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-['Inter'] text-[10px] font-medium">Scrum</span>
+</a>
+<!-- Architecture -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-['Inter'] text-[10px] font-medium">Architecture</span>
+</a>
+</nav>
+</body></html>

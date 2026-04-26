@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Requirements Management | Efficiency AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#273647",
+                    "error": "#ffb4ab",
+                    "background": "#051424",
+                    "outline-variant": "#46464b",
+                    "on-secondary-fixed-variant": "#3323cc",
+                    "tertiary-container": "#1d0039",
+                    "primary": "#c5c6ce",
+                    "primary-fixed": "#e2e2eb",
+                    "secondary-fixed": "#e2dfff",
+                    "on-primary-fixed": "#191b22",
+                    "on-primary-container": "#7b7c84",
+                    "secondary-container": "#3626ce",
+                    "on-tertiary-fixed-variant": "#6800b4",
+                    "tertiary-fixed": "#f0dbff",
+                    "tertiary": "#ddb8ff",
+                    "primary-fixed-dim": "#c5c6ce",
+                    "on-tertiary-container": "#a74bfe",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed": "#0f0069",
+                    "on-error": "#690005",
+                    "on-tertiary": "#490080",
+                    "on-primary-fixed-variant": "#45464e",
+                    "on-secondary-container": "#b3b1ff",
+                    "surface": "#051424",
+                    "surface-container-lowest": "#010f1f",
+                    "surface-container": "#122131",
+                    "secondary-fixed-dim": "#c3c0ff",
+                    "surface-dim": "#051424",
+                    "surface-container-low": "#0d1c2d",
+                    "on-secondary": "#1d00a5",
+                    "outline": "#909095",
+                    "on-tertiary-fixed": "#2c0051",
+                    "on-primary": "#2e3037",
+                    "surface-container-high": "#1c2b3c",
+                    "on-surface-variant": "#c7c6cb",
+                    "inverse-on-surface": "#233143",
+                    "secondary": "#c3c0ff",
+                    "on-surface": "#d4e4fa",
+                    "inverse-surface": "#d4e4fa",
+                    "inverse-primary": "#5d5e65",
+                    "on-background": "#d4e4fa",
+                    "surface-variant": "#273647",
+                    "surface-bright": "#2c3a4c",
+                    "on-error-container": "#ffdad6",
+                    "surface-tint": "#c5c6ce",
+                    "primary-container": "#0f1117",
+                    "tertiary-fixed-dim": "#ddb8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "32px",
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "label-caps": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-base": ["Inter"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px -3px rgba(167, 75, 254, 0.3);
+            border: 1px solid rgba(167, 75, 254, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-base min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#0F1117]/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20 flex justify-between items-center px-4 h-16">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/20">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional woman with a confident expression against a soft-focus office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZSjMSpEKeocaE-UAdkYKtQVuio-_w2nYAss6YXoQX7P1am3rl_UCdC11SkvYUfp4ITX-FrcGjhhPvI3jNsV8qKTr_atHaSvIYwJgakFaGWWpOo67cHfDijPB3Y3_4ZFsUazPwR0yny3hNRXhhNdbxsPGrP2Yp07XxwomWx3qIQ-gff4vtyJ3E2ien3q5UHhim4HVDXxV3OwMZXIejTQvRxl0C2Hq72kWw-4XoW5C53t3Ybkr20srsgFFgC2WlXfMs5uYkeGsBBslq"/>
+</div>
+<h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 font-['Inter'] tracking-tight">Efficiency AI</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-slate-200" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="pt-20 px-4 space-y-6">
+<!-- Search & AI Command Bar -->
+<div class="glass-card ai-glow rounded-xl p-3 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="auto_awesome">auto_awesome</span>
+<input class="bg-transparent border-none focus:ring-0 text-on-surface-variant font-body-sm w-full p-0" placeholder="Search or ask AI to group requirements..." type="text"/>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+</div>
+<!-- Section Header -->
+<div class="flex justify-between items-end">
+<div>
+<p class="font-label-caps text-label-caps text-on-primary-container">SYSTEM BACKLOG</p>
+<h2 class="font-headline-md text-headline-md text-on-surface">Requirements</h2>
+</div>
+<button class="bg-secondary-container text-on-secondary-container rounded-lg px-4 py-2 font-label-caps text-label-caps flex items-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                NEW
+            </button>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full px-3 py-1 font-label-caps text-[11px] whitespace-nowrap">All (24)</span>
+<span class="bg-surface-container-high text-on-surface-variant border border-white/5 rounded-full px-3 py-1 font-label-caps text-[11px] whitespace-nowrap">Critical (3)</span>
+<span class="bg-surface-container-high text-on-surface-variant border border-white/5 rounded-full px-3 py-1 font-label-caps text-[11px] whitespace-nowrap">Architecture (8)</span>
+<span class="bg-surface-container-high text-on-surface-variant border border-white/5 rounded-full px-3 py-1 font-label-caps text-[11px] whitespace-nowrap">API (12)</span>
+</div>
+<!-- Requirements List -->
+<div class="space-y-4">
+<!-- Requirement Card 1: Active/Expandable -->
+<div class="glass-card rounded-xl p-4 border-l-4 border-l-error">
+<div class="flex justify-between items-start mb-3">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-error bg-error/10 px-1.5 py-0.5 rounded">P0</span>
+<span class="font-label-caps text-[10px] text-on-primary-container">REQ-204</span>
+</div>
+<h3 class="font-headline-md text-body-base text-on-surface font-semibold">Real-time Data Sync Architecture</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<p class="font-body-sm text-on-surface-variant mb-4 line-clamp-2">Ensure sub-millisecond latency for distributed ledger updates across multi-region clusters using WebSocket protocols.</p>
+<div class="flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border border-background overflow-hidden">
+<img alt="Avatar A" class="w-full h-full object-cover" data-alt="Portrait of a software architect with glasses in a tech-focused studio lighting environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPLVSdYiuq5Sm7BgGRe6G6a1TSwkVESSXwRvEEgTS2KYjBsvevvL1jhbT-p7Dz2uKq91O2FJv_MhIFE8gSSo3KCl8QPpjwRpqgCTDTNNcmslv70MevsA4mMHEC9J4phViAcIFtV5byafVb_TAJIMD1RP4XpRc0_-4hMCyhENUg9ugSecBFgbocWkA83gs2fyX1D1B7_dSK_Lflt800H3ZNi8yUNyjAfulYe5_qXTPnR8B-eJP97t3RDlIIeLlSrEDmyl5GePFH0zxm"/>
+</div>
+<div class="w-6 h-6 rounded-full border border-background overflow-hidden">
+<img alt="Avatar B" class="w-full h-full object-cover" data-alt="Headshot of a project manager with a friendly smile in a modern office with natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLHJz2mez01pwR3WuVotyfSG5qSBkN0FX_ec0YjpOQ3uxCveYkgLPZMKV-I-fEW2TbhuLIpMQ8dFp65i2_HcTlae1DFndl-xMrEJkvRz6oX-75zYZTZIiE1tlxdA_r72skMNba6TFAl7-eEaUmKAWriSIoHmQ_XQFC1dlH-MN4JaNrg_pOuz0A2VWhIYhM6rZk877MTMDvDVG6-qeeHggh7LQ3WBIAvfYOw57v10UfdW3309tYqtFkMEhZxroJ6k8H8g9Myh2IBrbd"/>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-medium">Architecture</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-medium">Core</span>
+</div>
+</div>
+<!-- Detail View Content (Simulated Expand) -->
+<div class="mt-4 pt-4 border-t border-white/5 space-y-3">
+<div class="flex items-center gap-2 text-on-primary-container">
+<span class="material-symbols-outlined text-[16px]" data-icon="history">history</span>
+<span class="font-body-sm text-[12px]">Last edited 2h ago by Sarah K.</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-blue-500 h-full w-[65%] shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+</div>
+<span class="font-label-caps text-[10px] text-blue-400">65% Readiness</span>
+</div>
+</div>
+</div>
+<!-- Requirement Card 2 -->
+<div class="glass-card rounded-xl p-4 border-l-4 border-l-tertiary">
+<div class="flex justify-between items-start mb-3">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">P1</span>
+<span class="font-label-caps text-[10px] text-on-primary-container">REQ-205</span>
+</div>
+<h3 class="font-headline-md text-body-base text-on-surface font-semibold">User Authentication Flow Redesign</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border border-background overflow-hidden">
+<img alt="Avatar C" class="w-full h-full object-cover" data-alt="Portrait of a young designer with creative style in a studio with soft purple and blue ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoBFI4QHo32j85jQYRkZyWTw27NS512J6vSnQBXg0LWQudx09ALl7k1oK0I9cfRloBtn2NT-w-O4JX01WGQz_oRNNu8HHZB2niNqwhqUzgq4mG26rwaNnaDF_ajZtsSJGB_gTUddase4JYTGuYTcOAS8V_O1AzIaG1xLSHFM87L9NcBJ8kN_v7vigfCYwQts-ZXlgfpYQPzeoAmLG4xjOCCtoZ20MCvP1nX8FmP6IPKAGAiSXbeFR_mmWkCYRUOjhRlUiiHXVPNWRh"/>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-medium">Security</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-medium">UX</span>
+</div>
+</div>
+</div>
+<!-- Requirement Card 3 -->
+<div class="glass-card rounded-xl p-4 border-l-4 border-l-on-primary-container">
+<div class="flex justify-between items-start mb-3">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-on-primary-container bg-surface-container-highest px-1.5 py-0.5 rounded">P2</span>
+<span class="font-label-caps text-[10px] text-on-primary-container">REQ-206</span>
+</div>
+<h3 class="font-headline-md text-body-base text-on-surface font-semibold">Export to PDF Module</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border border-background overflow-hidden">
+<img alt="Avatar D" class="w-full h-full object-cover" data-alt="Close-up of a developer in a dark room with the blue glow of a computer screen illuminating their face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ9bHFiU4sPUxr3ORqKaGoQoiWT2Bhst3wLUiTNlNmpN2BXstRc5QdwaYWhUdnXbZToRZZXzx3la_WrMIMilTOCgrhOhpTRpLrgEjm3tlegZ2SDDy57_ApeLOpzw9TdXaCEkn_-ByvQnSzoFC28J3n7OpuyH5UjfcQIHqOd3mWF2Cc16L6ModBbS-IiKTw_ktxOj_jTeuFuKzoBZ2x7FSGVLZpnYPdyqOJIrrK3WCfAE_ca0X4ur1myqCVVCCWepDSIhX5szhg7jHG"/>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-medium">Reporting</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Asymmetric Visual: AI Insights -->
+<div class="glass-card rounded-2xl overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 pointer-events-none"></div>
+<div class="p-5 relative z-10">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="psychology">psychology</span>
+<h4 class="font-label-caps text-label-caps text-tertiary">AI CO-PILOT ANALYSIS</h4>
+</div>
+<p class="font-body-sm text-on-surface mb-4">Detected 3 conflicting requirements in the "Core" category. Strategic optimization recommended.</p>
+<button class="w-full bg-white/5 border border-white/10 text-on-surface rounded-lg py-2 text-label-caps font-label-caps hover:bg-white/10 transition-colors">
+                    RESOLVE CONFLICTS
+                </button>
+</div>
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-tertiary/20 blur-3xl group-hover:bg-tertiary/40 transition-all"></div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-[#0F1117]/90 backdrop-blur-2xl border-t border-white/10 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex justify-around items-center h-20 pb-4 px-2">
+<div class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] text-[10px] font-medium">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium">Planning</span>
+</div>
+<!-- Active Tab: Requirements -->
+<div class="flex flex-col items-center justify-center text-blue-400 bg-blue-500/10 rounded-xl px-2 py-1 active:scale-90 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-['Inter'] text-[10px] font-medium">Requirements</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-['Inter'] text-[10px] font-medium">Scrum</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 active:scale-90 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-['Inter'] text-[10px] font-medium">Architecture</span>
+</div>
+</nav>
+</body></html>
