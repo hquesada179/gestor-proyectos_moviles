@@ -5,6 +5,7 @@ import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoDto
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoSprintDto
 import com.helbertquesada.gestor_proyectos_moviles.network.ProyectoTareaDto
 import com.helbertquesada.gestor_proyectos_moviles.network.RetrofitClient
+import com.helbertquesada.gestor_proyectos_moviles.network.TareaDto
 
 class ProyectoRepository {
     private val api = RetrofitClient.proyectoApi
@@ -23,5 +24,9 @@ class ProyectoRepository {
 
     suspend fun getSprintsByProyecto(id: Int): Result<List<ProyectoSprintDto>> = runCatching {
         api.getSprintsByProyecto(id).sprints
+    }
+
+    suspend fun getTareas(): Result<List<TareaDto>> = runCatching {
+        api.getTareas().items
     }
 }
